@@ -8,6 +8,7 @@ tilesetRoadUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/6b923
 tilesetRoadID = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/f28de1c880fb890960f9d7c56b21c03bc112ab48/Road%20Tileset%20ID.csv"
 
 tilesetUiUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/e051ba39af9120a147405ab5d56e7359e1882959/TilemapUI.png"
+logoUiUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/a386c76485b0b04b18e17b51acbda0c544ccfb14/Logo.png"
 riverBasinUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/434a2e2d30e6535dd466531759447a4809f8ae6c/River%20Basin%20Level.csv"
 greenplainsUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/6b92357a8a5a5ae25b231ee267b21f739032b31d/Green%20Plains.csv"
 
@@ -19,6 +20,7 @@ clock = pygame.time.Clock()
 font = pygame.font.SysFont("arial", 24)
 tileSize = 32
 avaliableMaps = [riverBasinUrl, greenplainsUrl]
+currentMap = random.choice(avaliableMaps)
 
 # CSV Loading
 def loadData(url=riverBasinUrl):
@@ -31,7 +33,7 @@ def loadData(url=riverBasinUrl):
         sys.exit()
 
 global mapData, tileData
-mapData = loadData(random.choice(avaliableMaps))
+mapData = loadData(currentMap)
 tileData = loadData(tilesetRoadID)
 mapHeight = len(mapData)
 mapWidth = max(len(row) for row in mapData)
@@ -51,6 +53,7 @@ tilesetDark = loadImage(tilesetDarkUrl)
 
 tilesetRoad = loadImage(tilesetRoadUrl)
 tilesetUi = loadImage(tilesetUiUrl)
+tilesetLogoUi = loadImage(logoUiUrl)
 
 # Tile Functions
 def getTileById(sheet, tileId):
@@ -94,6 +97,17 @@ def roadMapping(sheet=tileData):
                 if tile not in roadTileMapping[x]:
                     roadTileMapping[x].append(tile)
 
+def drawRoad(sheet=roadTilePlacementCache, mouseCoord=(0,0)):
+    for coord in sheet:
+        gridXTile = (coord[0] // tileSize) * tileSize
+        gridYTile = (coord[1] // tileSize) * tileSize
+        if (gridXTile, gridYTile) !=  mouseCoord:
+            screen.blit(sheet.get(coord, None), coord)
+
+def validRoadPlacement(sheet, tileCoord, mouseCoord):
+    id = sheet[tileCoord[0]][tileCoord[1]]
+
+
 # Main Loop
 running = True
 currentRoad = None
@@ -102,10 +116,13 @@ state = "menu"
 roadMapping()
 
 playRect = pygame.Rect(tileSize * 6, tileSize * 8, tileSize * 3, tileSize)
+logoRect = pygame.Rect(tileSize * 5, tileSize * 4, tileSize * 5, tileSize * 2)
 exitRect = pygame.Rect(tileSize * 13, tileSize * 1, tileSize, tileSize)
 
 while running:
     mouseX, mouseY = pygame.mouse.get_pos()
+    gridX = (mouseX // tileSize) * tileSize
+    gridY = (mouseY // tileSize) * tileSize
     screen.fill((0, 0, 0))
 
     for event in pygame.event.get():
@@ -115,10 +132,35 @@ while running:
             if exitRect.collidepoint(event.pos):
                 if state == "game":
                     state = "menu"
+                    roadTilePlacementCache = {}
                 elif state == "menu":
                     running = False
             elif state == "menu" and playRect.collidepoint(event.pos):
                 state = "game"
+
+            elif state == "game":
+                if index not in [4, 5]: roadTilePlacementCache[(gridX, gridY)] = currentRoad
+                else: 
+                    currentIndex = roadTileMapping[index].index(currentRoad)
+                    if index == 4:
+                        if currentIndex == 0:
+                            for i in range(-1,2,1): 
+                                newRoad = roadTileMapping[index][currentIndex + i + 1]
+                                roadTilePlacementCache[(gridX, gridY + tileSize * i)] = newRoad
+                        elif currentIndex == 3:
+                            for i in range(-1,2,1): 
+                                newRoad = roadTileMapping[index][currentIndex + i + 1]
+                                roadTilePlacementCache[(gridX - tileSize * i, gridY)] = newRoad
+                    elif index == 5:
+                        if currentIndex == 0:
+                            for i in range(-1,3,1): 
+                                newRoad = roadTileMapping[index][currentIndex + i + 1]
+                                roadTilePlacementCache[(gridX, gridY + tileSize * i)] = newRoad
+                        elif currentIndex == 4:
+                            for i in range(-1,3,1): 
+                                newRoad = roadTileMapping[index][currentIndex + i + 1]
+                                roadTilePlacementCache[(gridX - tileSize * i, gridY)] = newRoad
+
         elif event.type == pygame.KEYDOWN:
             if state == "game":
                 if pygame.K_1 <= event.key <= pygame.K_6:
@@ -141,12 +183,13 @@ while running:
 
     if state == "game":
         drawMap(tileset)
-        if currentRoad:
+        drawRoad(roadTilePlacementCache, (gridX, gridY))
+        if currentRoad and not exitRect.collidepoint(mouseX, mouseY):
             currentIndex = roadTileMapping[index].index(currentRoad)
             gridX = (mouseX // tileSize) * tileSize
             gridY = (mouseY // tileSize) * tileSize
 
-            if index == 4:  # Short-Bridge (3 tiles)
+            if index == 4:
                 if currentIndex == 0:
                     for i in range(-1,2,1): 
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
@@ -155,18 +198,16 @@ while running:
                     for i in range(-1,2,1): 
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
                         screen.blit(newRoad,(gridX - tileSize * i, gridY))
-
-            elif index == 5:  # Long-Bridge (4 tiles)
+            elif index == 5:
                 if currentIndex == 0:
                     for i in range(-1,3,1): 
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
                         screen.blit(newRoad,(gridX, gridY + tileSize * i))
-                elif currentIndex == 3:
+                elif currentIndex == 4:
                     for i in range(-1,3,1): 
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
                         screen.blit(newRoad,(gridX - tileSize * i, gridY))
-            else:  # Regular roads
-                screen.blit(currentRoad, (gridX, gridY))
+            else: screen.blit(currentRoad, (gridX, gridY))
     
     elif state == "menu":
         drawMap(tilesetDark)
@@ -174,6 +215,13 @@ while running:
         for i, tileIndex in enumerate(buttonTiles):
             screen.blit(getTileCached(tilesetUi, tileIndex), 
                       (playRect.x + i * tileSize, playRect.y))
+        
+        tileIndex = 0
+        for iy in range(2):
+            for ix in range(6):
+                screen.blit(getTileCached(tilesetLogoUi, tileIndex),
+                            (logoRect.x + ix * tileSize, logoRect.y + iy * tileSize))
+                tileIndex += 1
     
     exitTile = 6 if exitRect.collidepoint(mouseX, mouseY) else 7
     screen.blit(getTileCached(tilesetUi, exitTile), exitRect.topleft)
