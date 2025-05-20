@@ -116,7 +116,7 @@ def bridgeCollision(cache=bridgeTileCache):
     
     for bridge in removeBridge:
         if bridge in cache:
-            deleteBridge(bridgeTileCache, bridge)
+            deleteBridge(cache, bridge)
 
 def roadMapping(sheet=tileData):
     for y, row in enumerate(sheet):
@@ -134,6 +134,8 @@ def drawRoad(sheet=roadTilePlacementCache, mouseCoord=(0, 0)):
         
         if (gridXTile, gridYTile) != mouseCoord:
             screen.blit(placedTile, coord)
+
+#Road Tile deletion
 
 
 # Main Loop
@@ -178,6 +180,7 @@ while running:
                 bridgeNumber = 0 if len(bridgeTileCache.keys()) == 0 else max(list(bridgeTileCache.keys())) + 1
                 isValid = False
                 isLand = list()
+                #Valid Bridge placement check
                 if index in [4, 5]:
                     offset = [
                         [[0, 1],[0, -1],[1, 0],[-1, 0]],
@@ -208,6 +211,7 @@ while running:
                         if isLand[i] and isLand[i+2] and not isLand[i+1] and isLand[i]==isLand[i+2] and isLand[i] != isLand[i+1]:
                             isValid = True
                 
+                #Update roadTileplacementCache to reflect changes
                 idTile = mapData[gridY // tileSize][gridX // tileSize]
                 isWater = True if idTile in range(12, 17) else False
                 isBridge = True if index in [4, 5] else False
@@ -268,6 +272,13 @@ while running:
         # Road Drawing
         drawMap(tileset)
         drawRoad(roadTilePlacementCache, (gridX, gridY))
+
+        # Tile outline
+        if not exitRect.collidepoint(mouseX, mouseY):
+            outlineRect = pygame.Rect(gridX, gridY, tileSize, tileSize)
+            pygame.draw.rect(screen, (255, 255, 255), outlineRect, width=1)
+
+        # Tile bilt onto sceen
         if currentRoad and not exitRect.collidepoint(mouseX, mouseY):
             currentIndex = roadTileMapping[index].index(currentRoad)
             gridX = (mouseX // tileSize) * tileSize
