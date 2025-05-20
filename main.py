@@ -10,7 +10,7 @@ tilesetRoadID = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/f28de1
 tilesetUiUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/e051ba39af9120a147405ab5d56e7359e1882959/TilemapUI.png"
 logoUiUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/a386c76485b0b04b18e17b51acbda0c544ccfb14/Logo.png"
 riverBasinUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/434a2e2d30e6535dd466531759447a4809f8ae6c/River%20Basin%20Level.csv"
-greenplainsUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/6b92357a8a5a5ae25b231ee267b21f739032b31d/Green%20Plains.csv"
+greenplainsUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/4bb99439cdc410d851c0d29f2a69ab2414843fd5/Green%20Plains.csv"
 
 # Initialization
 pygame.init()
@@ -19,7 +19,7 @@ clock = pygame.time.Clock()
 font = pygame.font.SysFont("arial", 24)
 tileSize = 32
 avaliableMaps = [riverBasinUrl, greenplainsUrl]
-currentMap = riverBasinUrl #random.choice(avaliableMaps)
+currentMap = random.choice(avaliableMaps)
 placementError = "You cannot place here."
 
 # CSV Loading
@@ -33,7 +33,7 @@ def loadData(url=riverBasinUrl):
         sys.exit()
 
 global mapData, tileData
-mapData = loadData(currentMap)
+mapData = loadData(riverBasinUrl)
 tileData = loadData(tilesetRoadID)
 mapHeight = len(mapData)
 mapWidth = max(len(row) for row in mapData)
@@ -95,14 +95,12 @@ def editBridge(cache=bridgeTileCache, tile=None, coord=(0,0), bridgeNumber=0):
     if bridgeNumber not in cache:
         cache[bridgeNumber] = []
     cache[bridgeNumber].append([coord, tile])
-    print(cache)
 
 def deleteBridge(cache=bridgeTileCache, bridgeNumber=0):
     for coord, tile in bridgeTileCache[bridgeNumber]:
         if coord in roadTilePlacementCache:
             del roadTilePlacementCache[coord]
     del cache[bridgeNumber]
-    print(cache)
 
 def bridgeCollision(cache=bridgeTileCache):
     removeTile = dict()
@@ -119,7 +117,6 @@ def bridgeCollision(cache=bridgeTileCache):
     for bridge in removeBridge:
         if bridge in cache:
             deleteBridge(bridgeTileCache, bridge)
-
 
 def roadMapping(sheet=tileData):
     for y, row in enumerate(sheet):
@@ -145,6 +142,7 @@ running = True
 currentRoad = None
 index = 0
 state = "menu"
+mapData = loadData(riverBasinUrl)
 roadMapping()
 
 playRect = pygame.Rect(tileSize * 6, tileSize * 8, tileSize * 3, tileSize)
@@ -165,12 +163,14 @@ while running:
             #Exit button clicked logic
             if exitRect.collidepoint(event.pos):
                 if state == "game":
+                    mapData = loadData(riverBasinUrl)
                     state = "menu"
                     roadTilePlacementCache.clear()
                     bridgeTileCache.clear()
                 elif state == "menu":
                     running = False
             elif state == "menu" and playRect.collidepoint(event.pos):
+                mapData = loadData(random.choice(avaliableMaps))
                 state = "game"
 
             elif state == "game":
@@ -181,18 +181,23 @@ while running:
                 if index in [4, 5]:
                     offset = [
                         [[0, 1],[0, -1],[1, 0],[-1, 0]],
-                        [[0, -2],[0, -1],[0, 1],
-                        [-2, 0],[-1, 0],[1, 0]]]
+                        [[0, 2],[0, 1],[0, -1], [-2, 0],[-1, 0],[1, 0]]]
                     
                     for offsetX, offsetY in offset[index - 4]:
                         try:
                             idTile = mapData[(gridY + tileSize * offsetY) // tileSize][(gridX + tileSize * offsetX) // tileSize]
+                            screen.blit(getTileCached(tileset, idTile), (32,32))
+                            #pygame.display.flip()
+                            #pygame.time.delay(1000)
                             isLand.append(False if idTile in range(12, 17) else True)
                         except IndexError:
                             idTile = None
                             isLand.append(None)
                     
                     roadId = list(roadTileMapping[index]).index(currentRoad)
+                    print(isLand)
+                    print(roadId)
+                    
                     if index == 4:
                         i = 0 if roadId == 0 else 2
                         if isLand[i] and isLand[i+1] and isLand[i] == isLand[i+1]:
@@ -235,6 +240,7 @@ while running:
                                 newRoad = roadTileMapping[index][currentIndex + i + 1]
                                 roadTilePlacementCache[(gridX - tileSize * i, gridY)] = newRoad
                                 editBridge(bridgeTileCache, newRoad, (gridX - tileSize * i, gridY), bridgeNumber)
+                    bridgeCollision(bridgeTileCache)
                 else: print(placementError)
 
         elif event.type == pygame.KEYDOWN:
@@ -289,7 +295,7 @@ while running:
     
     elif state == "menu":
         # Play Button
-        drawMap(tilesetDark)
+        drawMap(tilesetDark) 
         buttonTiles = range(3) if playRect.collidepoint(mouseX, mouseY) else range(3, 6)
         for i, tileIndex in enumerate(buttonTiles):
             screen.blit(getTileCached(tilesetUi, tileIndex), 
@@ -307,6 +313,4 @@ while running:
     screen.blit(getTileCached(tilesetUi, exitTile), exitRect.topleft)
 
     pygame.display.flip()
-print(roadTileMapping)
-
 pygame.quit()
