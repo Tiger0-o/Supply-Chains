@@ -10,7 +10,7 @@ tilesetRoadID = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/f28de1
 tilesetUiUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/e051ba39af9120a147405ab5d56e7359e1882959/TilemapUI.png"
 logoUiUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/a386c76485b0b04b18e17b51acbda0c544ccfb14/Logo.png"
 riverBasinUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/434a2e2d30e6535dd466531759447a4809f8ae6c/River%20Basin%20Level.csv"
-greenplainsUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/4bb99439cdc410d851c0d29f2a69ab2414843fd5/Green%20Plains.csv"
+greenplainsUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/4016aaf61ed7f318fcb09b79b2ae62c3795e4868/Green%20Plains.csv"
 
 # Initialization
 pygame.init()
@@ -172,7 +172,7 @@ while running:
                 elif state == "menu":
                     running = False
             elif state == "menu" and playRect.collidepoint(event.pos):
-                mapData = loadData(random.choice(avaliableMaps))
+                mapData = loadData(greenplainsUrl)
                 state = "game"
 
             elif state == "game":
