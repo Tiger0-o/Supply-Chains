@@ -111,7 +111,6 @@ def deleteBridge(cache=bridgeTileCache, bridgeNumber=0):
             if not roadTilePlacementCache[coord]:
                 del roadTilePlacementCache[coord]
     del cache[bridgeNumber]
-    print(bridgeTileCache)
 
 
 def bridgeCollision(cache=bridgeTileCache):
@@ -132,6 +131,13 @@ def bridgeCollision(cache=bridgeTileCache):
         if bridge in cache:
             deleteBridge(cache, bridge)
 
+def bridgeLocate(cache=bridgeTileCache, contains=(0, 0)):
+    for bridgeNumber, tiles in bridgeTileCache.items():
+        for coord, tile in tiles:
+            if coord == contains:
+                return bridgeNumber
+    return None
+
 def roadMapping(sheet=tileData):
     for y, row in enumerate(sheet):
         for x, tileId in enumerate(row):
@@ -141,38 +147,41 @@ def roadMapping(sheet=tileData):
                     roadTileMapping[x].append(tile)
 
 def drawRoad(sheet=roadTilePlacementCache, mouseCoord=(0, 0)):
-    for coord in sheet:
+    roadId = [item for i in range(4) for item in roadTileMapping[i]]
+    hiddenTiles = []
+    if 'hiddenBridges' in globals() and hiddenBridges:
+        for idBridge in hiddenBridges:
+            if idBridge in bridgeTileCache:
+                for coord, tile in bridgeTileCache[idBridge]:
+                    hiddenTiles.append([coord, tile])
+
+    for coord, tiles in sheet.items():
         gridXTile = (coord[0] // tileSize) * tileSize
         gridYTile = (coord[1] // tileSize) * tileSize
-        placedTile = list(sheet.get(coord, []))
-        roadId = [item for i in range(4) for item in roadTileMapping[i]]
-
-        isColliding = None 
-        for tile in placedTile:
-            if tile == None: continue
-            if tile in roadId and (gridXTile, gridYTile) != mouseCoord:
+        
+        for tile in tiles:
+            if tile is None: continue  
+            elif tile in roadId:
+                if  (gridXTile, gridYTile) != mouseCoord and currentRoad not in roadId:
+                    screen.blit(tile, coord)
+            else:
+                if [coord, tile] in hiddenTiles: continue
                 screen.blit(tile, coord)
-            elif tile not in roadId:
-                if currentRoad not in roadId:
-                    isColliding = next((k for k, v in bridgeTileCache.items() if mouseCoord in [coord for coord, _ in v]), None)
-                if isColliding is not None and any(tile is surface for _, surface in bridgeTileCache[isColliding]):
-                    continue
-                screen.blit(tile, coord)
-
+                
 #Road Tile deletion
 
 
 # Main Loop
-global currentRoad
+global currentRoad, hiddenBridges
 running = True
 currentRoad = None
 
 index = 0
 state = "menu"
 
+colors = [(255, 105, 97), (255, 255, 255)]
 mapData = loadData(riverBasinUrl)
 roadMapping()
-
 
 playRect = pygame.Rect(tileSize * 6, tileSize * 8, tileSize * 3, tileSize)
 logoRect = pygame.Rect(tileSize * 5, tileSize * 4, tileSize * 5, tileSize * 2)
@@ -183,6 +192,7 @@ while running:
     mouseX, mouseY = pygame.mouse.get_pos()
     gridX = (mouseX // tileSize) * tileSize
     gridY = (mouseY // tileSize) * tileSize
+    outlineRect = pygame.Rect(gridX, gridY, tileSize, tileSize)
     screen.fill((0, 0, 0))
 
     for event in pygame.event.get():
@@ -305,42 +315,51 @@ while running:
                         currentRoad = None
 
     if state == "game":
+        hiddenBridges = list()
         # Road Drawing to cursor
         drawMap(tileset)
-        drawRoad(roadTilePlacementCache, (gridX, gridY))
 
         # Tile outline
         if not exitRect.collidepoint(mouseX, mouseY):
-            outlineRect = pygame.Rect(gridX, gridY, tileSize, tileSize)
             pygame.draw.rect(screen, (255, 255, 255), outlineRect, width=1)
 
         # Tile bilt current tile onto screen (cursor)
-        idTile = mapData[gridY // tileSize][gridX // tileSize]
-        isWater = idTile in range(12, 17)
         if currentRoad and not exitRect.collidepoint(mouseX, mouseY):
+            bridgeId = [roadTileMapping[5][i] for i in [1, 2, 5, 6]] + [roadTileMapping[4][i] for i in [1, 4]]
             currentIndex = roadTileMapping[index].index(currentRoad)
             gridX = (mouseX // tileSize) * tileSize
             gridY = (mouseY // tileSize) * tileSize
 
+            isWater = mapData[gridY // tileSize][gridX // tileSize] in range(12, 17)
             if index == 4:
                 if currentIndex == 0:
                     for i in range(-1,2,1): 
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
                         screen.blit(newRoad,(gridX, gridY + tileSize * i))
+                        if bridgeLocate(contains=(gridX, gridY + tileSize * i)) != None and newRoad in bridgeId: 
+                            hiddenBridges.append(bridgeLocate(contains=(gridX, gridY + tileSize * i)))
                 elif currentIndex == 3:
                     for i in range(-1,2,1): 
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
                         screen.blit(newRoad,(gridX - tileSize * i, gridY))
+                        if bridgeLocate(contains=(gridX - tileSize * i, gridY)) != None and newRoad in bridgeId: 
+                            hiddenBridges.append(bridgeLocate(contains=(gridX - tileSize * i, gridY)))
             elif index == 5:
                 if currentIndex == 0:
                     for i in range(-1,3,1): 
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
                         screen.blit(newRoad,(gridX, gridY + tileSize * i))
+                        if bridgeLocate(contains=(gridX, gridY + tileSize * i)) != None and newRoad in bridgeId: 
+                            hiddenBridges.append(bridgeLocate(contains=(gridX, gridY + tileSize * i)))
                 elif currentIndex == 4:
                     for i in range(-1,3,1): 
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
                         screen.blit(newRoad,(gridX - tileSize * i, gridY))
-            elif not isWater: screen.blit(currentRoad, (gridX, gridY))
+                        if bridgeLocate(contains=(gridX - tileSize * i, gridY)) != None and newRoad in bridgeId: 
+                            hiddenBridges.append(bridgeLocate(contains=(gridX - tileSize * i, gridY)))
+            elif bridgeLocate(contains=(gridX, gridY)) == None or not isWater: 
+                    screen.blit(currentRoad, (gridX, gridY))
+            drawRoad(roadTilePlacementCache, (gridX, gridY))
     
     elif state == "menu":
         # Play Button
