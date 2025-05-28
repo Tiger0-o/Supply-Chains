@@ -10,7 +10,8 @@ tilesetRoadID = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/f28de1
 tilesetUiUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/e051ba39af9120a147405ab5d56e7359e1882959/TilemapUI.png"
 logoUiUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/a386c76485b0b04b18e17b51acbda0c544ccfb14/Logo.png"
 riverBasinUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/434a2e2d30e6535dd466531759447a4809f8ae6c/River%20Basin%20Level.csv"
-greenplainsUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/4016aaf61ed7f318fcb09b79b2ae62c3795e4868/Green%20Plains.csv"
+greenplainsUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/a47a02e15256fb7914f5dc01ef5c7827af088e1a/Green%20Plains.csv"
+greenplainstestUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/6b50712d6b090a5b4fcaff660ab57f222b274b80/Green%20Plains%20Test.csv"
 
 # Initialization
 pygame.init()
@@ -80,6 +81,7 @@ def drawMap(sheet):
             screen.blit(tile, (x * tileSize, y * tileSize))
 
 # Road Tile Placement
+global bridgeTileCache, roadTilePlacementCache, roadTileMapping
 bridgeTileCache = {}
 roadTilePlacementCache = {}
 roadTileMapping = {
@@ -95,12 +97,22 @@ def editBridge(cache=bridgeTileCache, tile=None, coord=(0,0), bridgeNumber=0):
     if bridgeNumber not in cache:
         cache[bridgeNumber] = []
     cache[bridgeNumber].append([coord, tile])
+    bridgeCollision(cache)
 
 def deleteBridge(cache=bridgeTileCache, bridgeNumber=0):
-    for coord, tile in bridgeTileCache[bridgeNumber]:
+    if bridgeNumber not in cache:
+        return
+
+    for coord, tile in cache[bridgeNumber]:
         if coord in roadTilePlacementCache:
-            del roadTilePlacementCache[coord]
+            roadTilePlacementCache[coord] = [
+                t for t in roadTilePlacementCache[coord] if t != tile
+            ]
+            if not roadTilePlacementCache[coord]:
+                del roadTilePlacementCache[coord]
     del cache[bridgeNumber]
+    print(bridgeTileCache)
+
 
 def bridgeCollision(cache=bridgeTileCache):
     removeTile = dict()
@@ -110,7 +122,9 @@ def bridgeCollision(cache=bridgeTileCache):
     for i in index:
         tiles = cache[i]
         for pos, tile in tiles:
-            if pos in removeTile:
+            if tile in [roadTileMapping[4][i] for i in [0, 2, 3, 5]] + [roadTileMapping[5][i] for i in [0, 3, 4, 7]]:
+                continue
+            elif pos in removeTile:
                 removeBridge.add(removeTile[pos])
             removeTile[pos] = i
     
@@ -130,10 +144,20 @@ def drawRoad(sheet=roadTilePlacementCache, mouseCoord=(0, 0)):
     for coord in sheet:
         gridXTile = (coord[0] // tileSize) * tileSize
         gridYTile = (coord[1] // tileSize) * tileSize
-        placedTile = sheet.get(coord, None)
-        
-        if (gridXTile, gridYTile) != mouseCoord:
-            screen.blit(placedTile, coord)
+        placedTile = list(sheet.get(coord, []))
+        roadId = [item for i in range(4) for item in roadTileMapping[i]]
+
+        isColliding = None 
+        for tile in placedTile:
+            if tile == None: continue
+            if tile in roadId and (gridXTile, gridYTile) != mouseCoord:
+                screen.blit(tile, coord)
+            elif tile not in roadId:
+                if currentRoad not in roadId:
+                    isColliding = next((k for k, v in bridgeTileCache.items() if mouseCoord in [coord for coord, _ in v]), None)
+                if isColliding is not None and any(tile is surface for _, surface in bridgeTileCache[isColliding]):
+                    continue
+                screen.blit(tile, coord)
 
 #Road Tile deletion
 
@@ -142,10 +166,13 @@ def drawRoad(sheet=roadTilePlacementCache, mouseCoord=(0, 0)):
 global currentRoad
 running = True
 currentRoad = None
+
 index = 0
 state = "menu"
+
 mapData = loadData(riverBasinUrl)
 roadMapping()
+
 
 playRect = pygame.Rect(tileSize * 6, tileSize * 8, tileSize * 3, tileSize)
 logoRect = pygame.Rect(tileSize * 5, tileSize * 4, tileSize * 5, tileSize * 2)
@@ -172,104 +199,113 @@ while running:
                 elif state == "menu":
                     running = False
             elif state == "menu" and playRect.collidepoint(event.pos):
-                mapData = loadData(greenplainsUrl)
+                mapData = loadData(greenplainstestUrl)
                 state = "game"
-
             elif state == "game":
-                #Update roadTileMapping for placement cache
-                bridgeNumber = 0 if len(bridgeTileCache.keys()) == 0 else max(list(bridgeTileCache.keys())) + 1
+                # Update roadTileMapping for placement cache
+                bridgeNumber = 0 if not bridgeTileCache else max(bridgeTileCache.keys()) + 1
                 isValid = False
-                isLand = list()
-                #Valid Bridge placement check
+                isLand = []
+
+                # Valid Bridge placement check
                 if index in [4, 5]:
                     offset = [
-                        [[0, 1],[0, -1],[1, 0],[-1, 0]],
-                        [[0, 2],[0, 1],[0, -1], [-2, 0],[-1, 0],[1, 0]]]
-                    
+                        [[0, 1], [0, -1], [1, 0], [-1, 0]],
+                        [[0, 2], [0, 1], [0, -1], [-2, 0], [-1, 0], [1, 0]]
+                    ]
                     for offsetX, offsetY in offset[index - 4]:
                         try:
                             idTile = mapData[(gridY + tileSize * offsetY) // tileSize][(gridX + tileSize * offsetX) // tileSize]
-                            screen.blit(getTileCached(tileset, idTile), (32,32))
-                            #pygame.display.flip()
-                            #pygame.time.delay(1000)
+                            screen.blit(getTileCached(tileset, idTile), (32, 32))
                             isLand.append(False if idTile in range(12, 17) else True)
                         except IndexError:
-                            idTile = None
                             isLand.append(None)
-                    
                     roadId = list(roadTileMapping[index]).index(currentRoad)
-                    print(isLand)
-                    print(roadId)
-                    
                     if index == 4:
                         i = 0 if roadId == 0 else 2
-                        if isLand[i] and isLand[i+1] and isLand[i] == isLand[i+1]:
+                        if isLand[i] and isLand[i + 1] and isLand[i] == isLand[i + 1]:
                             isValid = True
-                    
                     elif index == 5:
                         i = 0 if roadId == 0 else 3
-                        if isLand[i] and isLand[i+2] and not isLand[i+1] and isLand[i]==isLand[i+2] and isLand[i] != isLand[i+1]:
+                        if isLand[i] and isLand[i + 2] and not isLand[i + 1] and isLand[i] == isLand[i + 2] and isLand[i] != isLand[i + 1]:
                             isValid = True
-                
-                #Update roadTileplacementCache to reflect changes
-                idTile = mapData[gridY // tileSize][gridX // tileSize]
-                isWater = True if idTile in range(12, 17) else False
-                isBridge = True if index in [4, 5] else False
 
-                if index not in [4, 5]: 
+                # Update roadTileplacementCache to reflect changes
+                idTile = mapData[gridY // tileSize][gridX // tileSize]
+                isWater = idTile in range(12, 17)
+                isBridge = index in [4, 5]
+                roadId = [item for i in range(4) for item in roadTileMapping[i]]
+
+                if index not in [4, 5]:
                     if not isWater and not isBridge:
-                        roadTilePlacementCache[(gridX, gridY)] = currentRoad
-                    else: print(placementError)
-                elif index in [4,5] and isWater and isBridge and isValid:
+                        presentTiles = roadTilePlacementCache.get((gridX, gridY), [])
+                        bridgeTiles = [tile for tile in presentTiles if tile not in roadId]
+                        roadTilePlacementCache[(gridX, gridY)] = [currentRoad] + bridgeTiles
+                    else:
+                        print(placementError)
+                elif index in [4, 5] and isWater and isBridge and isValid:
                     currentIndex = roadTileMapping[index].index(currentRoad)
                     if index == 4:
                         if currentIndex == 0:
-                            for i in range(-1,2,1): 
+                            for i in range(-1, 2):
+                                pos = (gridX, gridY + tileSize * i)
+                                presentTiles = roadTilePlacementCache.get(pos, [])
+                                bridgeTiles = [tile for tile in presentTiles if tile not in roadId]
                                 newRoad = roadTileMapping[index][currentIndex + i + 1]
-                                roadTilePlacementCache[(gridX, gridY + tileSize * i)] = newRoad
-                                editBridge(bridgeTileCache, newRoad, (gridX, gridY + tileSize * i), bridgeNumber)
+                                if newRoad not in bridgeTiles:
+                                    roadTilePlacementCache[pos] = [newRoad] + presentTiles
+                                    editBridge(bridgeTileCache, newRoad, pos, bridgeNumber)
                         elif currentIndex == 3:
-                            for i in range(-1,2,1): 
+                            for i in range(-1, 2):
+                                pos = (gridX - tileSize * i, gridY)
+                                presentTiles = roadTilePlacementCache.get(pos, [])
+                                bridgeTiles = [tile for tile in presentTiles if tile not in roadId]
                                 newRoad = roadTileMapping[index][currentIndex + i + 1]
-                                roadTilePlacementCache[(gridX - tileSize * i, gridY)] = newRoad
-                                editBridge(bridgeTileCache, newRoad, (gridX - tileSize * i, gridY), bridgeNumber)
+                                if newRoad not in bridgeTiles:
+                                    roadTilePlacementCache[pos] = [newRoad] + presentTiles
+                                    editBridge(bridgeTileCache, newRoad, pos, bridgeNumber)
                     elif index == 5:
                         if currentIndex == 0:
-                            for i in range(-1,3,1): 
+                            for i in range(-1, 3):
+                                pos = (gridX, gridY + tileSize * i)
+                                presentTiles = roadTilePlacementCache.get(pos, [])
+                                bridgeTiles = [tile for tile in presentTiles if tile not in roadId]
                                 newRoad = roadTileMapping[index][currentIndex + i + 1]
-                                roadTilePlacementCache[(gridX, gridY + tileSize * i)] = newRoad
-                                editBridge(bridgeTileCache, newRoad, (gridX, gridY + tileSize * i), bridgeNumber)
+                                if newRoad not in bridgeTiles:
+                                    roadTilePlacementCache[pos] = [newRoad] + presentTiles
+                                    editBridge(bridgeTileCache, newRoad, pos, bridgeNumber)
                         elif currentIndex == 4:
-                            for i in range(-1,3,1): 
+                            for i in range(-1, 3):
+                                pos = (gridX - tileSize * i, gridY)
+                                presentTiles = roadTilePlacementCache.get(pos, [])
+                                bridgeTiles = [tile for tile in presentTiles if tile not in roadId]
                                 newRoad = roadTileMapping[index][currentIndex + i + 1]
-                                roadTilePlacementCache[(gridX - tileSize * i, gridY)] = newRoad
-                                editBridge(bridgeTileCache, newRoad, (gridX - tileSize * i, gridY), bridgeNumber)
-                    bridgeCollision(bridgeTileCache)
-                else: print(placementError)
+                                if newRoad not in bridgeTiles:
+                                    roadTilePlacementCache[pos] = [newRoad] + presentTiles
+                                    editBridge(bridgeTileCache, newRoad, pos, bridgeNumber)
 
         elif event.type == pygame.KEYDOWN:
-            # Current Road from KeyBinds
             if state == "game":
                 if pygame.K_1 <= event.key <= pygame.K_6:
                     index = event.key - pygame.K_1
                     if roadTileMapping[index]:
                         currentRoad = roadTileMapping[index][0]
                     else:
-                        currentRoad = None
+                         currentRoad = None
                 elif event.key == pygame.K_r and currentRoad:
                     try:
                         currentIndex = roadTileMapping[index].index(currentRoad)
                         if index == 4: step = 3
                         elif index == 5: step = 4
                         else: step = 1
-                        
+                            
                         nextIndex = (currentIndex + step) % len(roadTileMapping[index])
                         currentRoad = roadTileMapping[index][nextIndex]
                     except (ValueError, IndexError):
                         currentRoad = None
 
     if state == "game":
-        # Road Drawing
+        # Road Drawing to cursor
         drawMap(tileset)
         drawRoad(roadTilePlacementCache, (gridX, gridY))
 
@@ -278,7 +314,9 @@ while running:
             outlineRect = pygame.Rect(gridX, gridY, tileSize, tileSize)
             pygame.draw.rect(screen, (255, 255, 255), outlineRect, width=1)
 
-        # Tile bilt onto sceen
+        # Tile bilt current tile onto screen (cursor)
+        idTile = mapData[gridY // tileSize][gridX // tileSize]
+        isWater = idTile in range(12, 17)
         if currentRoad and not exitRect.collidepoint(mouseX, mouseY):
             currentIndex = roadTileMapping[index].index(currentRoad)
             gridX = (mouseX // tileSize) * tileSize
@@ -302,7 +340,7 @@ while running:
                     for i in range(-1,3,1): 
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
                         screen.blit(newRoad,(gridX - tileSize * i, gridY))
-            else: screen.blit(currentRoad, (gridX, gridY))
+            elif not isWater: screen.blit(currentRoad, (gridX, gridY))
     
     elif state == "menu":
         # Play Button
