@@ -21,6 +21,8 @@ font = pygame.font.SysFont("arial", 24)
 tileSize = 32
 avaliableMaps = [riverBasinUrl, greenplainsUrl]
 currentMap = random.choice(avaliableMaps)
+
+global currentRoad, hiddenBridges
 placementError = "You cannot place here."
 
 # CSV Loading
@@ -161,25 +163,73 @@ def drawRoad(sheet=roadTilePlacementCache, mouseCoord=(0, 0)):
         
         for tile in tiles:
             if tile is None: continue  
-            elif tile in roadId:
-                if  (gridXTile, gridYTile) != mouseCoord and currentRoad not in roadId:
+            if tile in roadId:
+                if (gridXTile, gridYTile) != mouseCoord:
                     screen.blit(tile, coord)
-            else:
+            elif tile not in roadId:
                 if [coord, tile] in hiddenTiles: continue
                 screen.blit(tile, coord)
                 
 #Road Tile deletion
+def deleteRoad(mouseCoord=(0, 0)):
+    global currentRoad
+    currentRoad = None  # Reset the current road selection or status
 
+    x, y = mouseCoord
+    isWater = mapData[y // tileSize][x // tileSize] in range(12, 17)
+
+    bridgePart = (
+        [roadTileMapping[5][i] for i in [0, 3, 4, 7]] +
+        [roadTileMapping[4][i] for i in [0, 2, 3, 5]]
+    )
+
+    print(isWater)
+    bridgeNumber = bridgeLocate(bridgeTileCache, contains=mouseCoord)
+    if bridgeNumber is not None and isWater:
+        print("Deleting bridge")
+        deleteBridge(bridgeTileCache, bridgeNumber)
+    elif mouseCoord in roadTilePlacementCache:
+        print("Deleting Road")
+        # Delete road tiles at this coord that are NOT part of bridge tiles
+        roadTilePlacementCache[mouseCoord] = [
+            tile for tile in roadTilePlacementCache[mouseCoord] if tile in bridgePart
+        ]
+        if not roadTilePlacementCache[mouseCoord]:
+            del roadTilePlacementCache[mouseCoord]
+        print(mouseCoord)
+        print(roadTilePlacementCache)
+
+
+# Clock class - too annoying to make using functions
+class Timer:
+    def __init__(self):
+        self.startTime = None
+        self.running = False
+
+    def start(self):
+        self.startTime = pygame.time.get_ticks()
+        self.running = True
+
+    def reset(self):
+        self.startTime = pygame.time.get_ticks()
+
+    def stop(self):
+        self.running = False
+
+    def elapsed(self):
+        if not self.running or self.startTime is None:
+            return 0
+        return (pygame.time.get_ticks() - self.startTime) / 1000.0  # seconds
 
 # Main Loop
-global currentRoad, hiddenBridges
+timer = Timer()
 running = True
 currentRoad = None
+currentMode = "building"
 
+a = 1
 index = 0
 state = "menu"
-
-colors = [(255, 105, 97), (255, 255, 255)]
 mapData = loadData(riverBasinUrl)
 roadMapping()
 
@@ -198,7 +248,12 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.MOUSEBUTTONUP:
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
+            currentMode = "deleting"
+            deleteRoad(mouseCoord=(gridX, gridY))
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            currentMode = "building"
+
             #Exit button clicked logic
             if exitRect.collidepoint(event.pos):
                 if state == "game":
@@ -209,10 +264,13 @@ while running:
                 elif state == "menu":
                     running = False
             elif state == "menu" and playRect.collidepoint(event.pos):
-                mapData = loadData(greenplainstestUrl)
+                mapData = loadData(greenplainstestUrl) # LOAD MAP HERE FOR GAME
                 state = "game"
-            elif state == "game":
+            elif state == "game" and currentMode == "building":
                 # Update roadTileMapping for placement cache
+                if currentRoad == None:
+                    print("Currently placing nothing.")
+                    continue
                 bridgeNumber = 0 if not bridgeTileCache else max(bridgeTileCache.keys()) + 1
                 isValid = False
                 isLand = []
@@ -241,8 +299,7 @@ while running:
                             isValid = True
 
                 # Update roadTileplacementCache to reflect changes
-                idTile = mapData[gridY // tileSize][gridX // tileSize]
-                isWater = idTile in range(12, 17)
+                isWater = mapData[gridY // tileSize][gridX // tileSize] in range(12, 17)
                 isBridge = index in [4, 5]
                 roadId = [item for i in range(4) for item in roadTileMapping[i]]
 
@@ -293,9 +350,10 @@ while running:
                                 if newRoad not in bridgeTiles:
                                     roadTilePlacementCache[pos] = [newRoad] + presentTiles
                                     editBridge(bridgeTileCache, newRoad, pos, bridgeNumber)
-
+                else: print(placementError)
         elif event.type == pygame.KEYDOWN:
             if state == "game":
+                currentMode = "building"
                 if pygame.K_1 <= event.key <= pygame.K_6:
                     index = event.key - pygame.K_1
                     if roadTileMapping[index]:
@@ -321,7 +379,19 @@ while running:
 
         # Tile outline
         if not exitRect.collidepoint(mouseX, mouseY):
-            pygame.draw.rect(screen, (255, 255, 255), outlineRect, width=1)
+            if currentMode == "building":
+                pygame.draw.rect(screen, (255, 255, 255), outlineRect, width=1)
+            elif currentMode == "deleting":
+                if not timer.running:   # start the timer only once when entering deleting mode
+                    timer.start()
+                if timer.elapsed() <= 0.175:
+                    pygame.draw.rect(screen, (255,50,50), outlineRect, width=1)
+                else:
+                    timer.reset()
+                    timer.stop()
+                    currentMode = "building"
+                    pygame.draw.rect(screen, (255, 255, 255), outlineRect, width=1)
+
 
         # Tile bilt current tile onto screen (cursor)
         if currentRoad and not exitRect.collidepoint(mouseX, mouseY):
@@ -330,36 +400,55 @@ while running:
             gridX = (mouseX // tileSize) * tileSize
             gridY = (mouseY // tileSize) * tileSize
 
-            isWater = mapData[gridY // tileSize][gridX // tileSize] in range(12, 17)
             if index == 4:
                 if currentIndex == 0:
-                    for i in range(-1,2,1): 
+                    for i in range(-1, 2):
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
-                        screen.blit(newRoad,(gridX, gridY + tileSize * i))
-                        if bridgeLocate(contains=(gridX, gridY + tileSize * i)) != None and newRoad in bridgeId: 
+                        screen.blit(newRoad, (gridX, gridY + tileSize * i))
+                        if (
+                            bridgeLocate(contains=(gridX, gridY + tileSize * i)) is not None and
+                            newRoad in bridgeId and
+                            mapData[(gridY + tileSize * i) // tileSize][gridX // tileSize] in range(12, 17)
+                        ):
                             hiddenBridges.append(bridgeLocate(contains=(gridX, gridY + tileSize * i)))
                 elif currentIndex == 3:
-                    for i in range(-1,2,1): 
+                    for i in range(-1, 2):
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
-                        screen.blit(newRoad,(gridX - tileSize * i, gridY))
-                        if bridgeLocate(contains=(gridX - tileSize * i, gridY)) != None and newRoad in bridgeId: 
+                        screen.blit(newRoad, (gridX - tileSize * i, gridY))
+                        if (
+                            bridgeLocate(contains=(gridX - tileSize * i, gridY)) is not None and
+                            newRoad in bridgeId and
+                            mapData[gridY // tileSize][(gridX - tileSize * i) // tileSize] in range(12, 17)
+                        ):
                             hiddenBridges.append(bridgeLocate(contains=(gridX - tileSize * i, gridY)))
             elif index == 5:
                 if currentIndex == 0:
-                    for i in range(-1,3,1): 
+                    for i in range(-1, 3):
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
-                        screen.blit(newRoad,(gridX, gridY + tileSize * i))
-                        if bridgeLocate(contains=(gridX, gridY + tileSize * i)) != None and newRoad in bridgeId: 
+                        screen.blit(newRoad, (gridX, gridY + tileSize * i))
+                        if (
+                            bridgeLocate(contains=(gridX, gridY + tileSize * i)) is not None and
+                            newRoad in bridgeId and
+                            mapData[(gridY + tileSize * i) // tileSize][gridX // tileSize] in range(12, 17)
+                        ):
                             hiddenBridges.append(bridgeLocate(contains=(gridX, gridY + tileSize * i)))
                 elif currentIndex == 4:
-                    for i in range(-1,3,1): 
+                    for i in range(-1, 3):
                         newRoad = roadTileMapping[index][currentIndex + i + 1]
-                        screen.blit(newRoad,(gridX - tileSize * i, gridY))
-                        if bridgeLocate(contains=(gridX - tileSize * i, gridY)) != None and newRoad in bridgeId: 
+                        screen.blit(newRoad, (gridX - tileSize * i, gridY))
+                        if (
+                            bridgeLocate(contains=(gridX - tileSize * i, gridY)) is not None and
+                            newRoad in bridgeId and
+                            mapData[gridY // tileSize][(gridX - tileSize * i) // tileSize] in range(12, 17)
+                        ):
                             hiddenBridges.append(bridgeLocate(contains=(gridX - tileSize * i, gridY)))
-            elif bridgeLocate(contains=(gridX, gridY)) == None or not isWater: 
-                    screen.blit(currentRoad, (gridX, gridY))
-            drawRoad(roadTilePlacementCache, (gridX, gridY))
+            elif bridgeLocate(contains=(gridX, gridY)) is None or not (
+                mapData[gridY // tileSize][gridX // tileSize] in range(12, 17)
+            ):
+                screen.blit(currentRoad, (gridX, gridY))
+
+        drawRoad(roadTilePlacementCache, (gridX, gridY))
+
     
     elif state == "menu":
         # Play Button
@@ -379,6 +468,9 @@ while running:
     
     exitTile = 6 if exitRect.collidepoint(mouseX, mouseY) else 7
     screen.blit(getTileCached(tilesetUi, exitTile), exitRect.topleft)
-
+    
+    if currentMode != a:
+        print(currentMode)
+        a = currentMode
     pygame.display.flip()
 pygame.quit()
