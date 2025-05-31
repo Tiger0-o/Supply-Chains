@@ -1,17 +1,20 @@
 import pygame, requests, io, sys, csv, random
 
 # Asset Urls
-tilesetUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/main/Tileset.png"
-tilesetDarkUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/a3e090b36c60e35889e90da922884cdd78a3395b/TilesetDark.png"
+tilesetLandURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/main/Tileset.png"
+tilesetLandDarkURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/a3e090b36c60e35889e90da922884cdd78a3395b/TilesetDark.png"
 
-tilesetRoadUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/6b92357a8a5a5ae25b231ee267b21f739032b31d/TilesetRoad.png"
-tilesetRoadID = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/f28de1c880fb890960f9d7c56b21c03bc112ab48/Road%20Tileset%20ID.csv"
+tilesetRoadURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/6b92357a8a5a5ae25b231ee267b21f739032b31d/TilesetRoad.png"
+tilesetRoadIDURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/f28de1c880fb890960f9d7c56b21c03bc112ab48/Road%20Tileset%20ID.csv"
+tilesetBuildingURL = ""
 
-tilesetUiUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/e051ba39af9120a147405ab5d56e7359e1882959/TilemapUI.png"
-logoUiUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/a386c76485b0b04b18e17b51acbda0c544ccfb14/Logo.png"
-riverBasinUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/434a2e2d30e6535dd466531759447a4809f8ae6c/River%20Basin%20Level.csv"
-greenplainsUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/a47a02e15256fb7914f5dc01ef5c7827af088e1a/Green%20Plains.csv"
-greenplainstestUrl = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/6b50712d6b090a5b4fcaff660ab57f222b274b80/Green%20Plains%20Test.csv"
+buttonUIURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/e051ba39af9120a147405ab5d56e7359e1882959/TilemapUI.png"
+logoUIURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/a386c76485b0b04b18e17b51acbda0c544ccfb14/Logo.png"
+
+
+riverBasinURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/434a2e2d30e6535dd466531759447a4809f8ae6c/River%20Basin%20Level.csv"
+greenPlainsURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/a47a02e15256fb7914f5dc01ef5c7827af088e1a/Green%20Plains.csv"
+testPlainsURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/6b50712d6b090a5b4fcaff660ab57f222b274b80/Green%20Plains%20Test.csv"
 
 # Initialization
 pygame.init()
@@ -19,14 +22,14 @@ pygame.display.set_caption("Supply Chains")
 clock = pygame.time.Clock()
 font = pygame.font.SysFont("arial", 24)
 tileSize = 32
-avaliableMaps = [riverBasinUrl, greenplainsUrl]
+avaliableMaps = [riverBasinURL, greenPlainsURL]
 currentMap = random.choice(avaliableMaps)
 
 global currentRoad, hiddenBridges
 placementError = "You cannot place here."
 
 # CSV Loading
-def loadData(url=riverBasinUrl):
+def loadData(url=riverBasinURL):
     try:
         csvResp = requests.get(url).text
         csvReader = csv.reader(io.StringIO(csvResp))
@@ -36,8 +39,8 @@ def loadData(url=riverBasinUrl):
         sys.exit()
 
 global mapData, tileData
-mapData = loadData(riverBasinUrl)
-tileData = loadData(tilesetRoadID)
+mapData = loadData(riverBasinURL)
+tileData = loadData(tilesetRoadIDURL)
 mapHeight = len(mapData)
 mapWidth = max(len(row) for row in mapData)
 screen = pygame.display.set_mode((mapWidth * tileSize, mapHeight * tileSize))
@@ -51,12 +54,12 @@ def loadImage(url):
         print(f"Error loading image from {url}:", e)
         sys.exit()
 
-tileset = loadImage(tilesetUrl)
-tilesetDark = loadImage(tilesetDarkUrl)
+tileset = loadImage(tilesetLandURL)
+tilesetDark = loadImage(tilesetLandDarkURL)
 
-tilesetRoad = loadImage(tilesetRoadUrl)
-tilesetUi = loadImage(tilesetUiUrl)
-tilesetLogoUi = loadImage(logoUiUrl)
+tilesetRoad = loadImage(tilesetRoadURL)
+tilesetUi = loadImage(buttonUIURL)
+tilesetLogoUi = loadImage(logoUIURL)
 
 # Tile Functions
 def getTileById(sheet, tileId):
@@ -128,7 +131,7 @@ def bridgeCollision(cache=bridgeTileCache):
             elif pos in removeTile:
                 removeBridge.add(removeTile[pos])
             removeTile[pos] = i
-    
+
     for bridge in removeBridge:
         if bridge in cache:
             deleteBridge(cache, bridge)
@@ -160,16 +163,20 @@ def drawRoad(sheet=roadTilePlacementCache, mouseCoord=(0, 0)):
     for coord, tiles in sheet.items():
         gridXTile = (coord[0] // tileSize) * tileSize
         gridYTile = (coord[1] // tileSize) * tileSize
-        
+
         for tile in tiles:
-            if tile is None: continue  
+            if tile is None: 
+                continue  
             if tile in roadId:
                 if (gridXTile, gridYTile) != mouseCoord:
                     screen.blit(tile, coord)
+                elif (gridXTile, gridYTile) == mouseCoord and currentRoad is None:
+                    screen.blit(tile, coord)
             elif tile not in roadId:
-                if [coord, tile] in hiddenTiles: continue
+                if [coord, tile] in hiddenTiles: 
+                    continue
                 screen.blit(tile, coord)
-                
+
 #Road Tile deletion
 def deleteRoad(mouseCoord=(0, 0)):
     global currentRoad
@@ -196,9 +203,6 @@ def deleteRoad(mouseCoord=(0, 0)):
         ]
         if not roadTilePlacementCache[mouseCoord]:
             del roadTilePlacementCache[mouseCoord]
-        print(mouseCoord)
-        print(roadTilePlacementCache)
-
 
 # Clock class - too annoying to make using functions
 class Timer:
@@ -227,10 +231,9 @@ running = True
 currentRoad = None
 currentMode = "building"
 
-a = 1
 index = 0
 state = "menu"
-mapData = loadData(riverBasinUrl)
+mapData = loadData(riverBasinURL)
 roadMapping()
 
 playRect = pygame.Rect(tileSize * 6, tileSize * 8, tileSize * 3, tileSize)
@@ -257,18 +260,18 @@ while running:
             #Exit button clicked logic
             if exitRect.collidepoint(event.pos):
                 if state == "game":
-                    mapData = loadData(riverBasinUrl)
+                    mapData = loadData(riverBasinURL)
                     state = "menu"
                     roadTilePlacementCache.clear()
                     bridgeTileCache.clear()
                 elif state == "menu":
                     running = False
             elif state == "menu" and playRect.collidepoint(event.pos):
-                mapData = loadData(greenplainstestUrl) # LOAD MAP HERE FOR GAME
+                mapData = loadData(testPlainsURL) # LOAD MAP HERE FOR GAME
                 state = "game"
             elif state == "game" and currentMode == "building":
                 # Update roadTileMapping for placement cache
-                if currentRoad == None:
+                if currentRoad is None:
                     print("Currently placing nothing.")
                     continue
                 bridgeNumber = 0 if not bridgeTileCache else max(bridgeTileCache.keys()) + 1
@@ -350,7 +353,8 @@ while running:
                                 if newRoad not in bridgeTiles:
                                     roadTilePlacementCache[pos] = [newRoad] + presentTiles
                                     editBridge(bridgeTileCache, newRoad, pos, bridgeNumber)
-                else: print(placementError)
+                else: 
+                    print(placementError)
         elif event.type == pygame.KEYDOWN:
             if state == "game":
                 currentMode = "building"
@@ -363,10 +367,13 @@ while running:
                 elif event.key == pygame.K_r and currentRoad:
                     try:
                         currentIndex = roadTileMapping[index].index(currentRoad)
-                        if index == 4: step = 3
-                        elif index == 5: step = 4
-                        else: step = 1
-                            
+                        if index == 4: 
+                            step = 3
+                        elif index == 5: 
+                            step = 4
+                        else: 
+                            step = 1
+
                         nextIndex = (currentIndex + step) % len(roadTileMapping[index])
                         currentRoad = roadTileMapping[index][nextIndex]
                     except (ValueError, IndexError):
@@ -442,14 +449,14 @@ while running:
                             mapData[gridY // tileSize][(gridX - tileSize * i) // tileSize] in range(12, 17)
                         ):
                             hiddenBridges.append(bridgeLocate(contains=(gridX - tileSize * i, gridY)))
-            elif bridgeLocate(contains=(gridX, gridY)) is None or not (
-                mapData[gridY // tileSize][gridX // tileSize] in range(12, 17)
+            elif bridgeLocate(contains=(gridX, gridY)) is None or (
+                mapData[gridY // tileSize][gridX // tileSize] not in range(12, 17)
             ):
                 screen.blit(currentRoad, (gridX, gridY))
 
         drawRoad(roadTilePlacementCache, (gridX, gridY))
 
-    
+
     elif state == "menu":
         # Play Button
         drawMap(tilesetDark) 
@@ -457,7 +464,7 @@ while running:
         for i, tileIndex in enumerate(buttonTiles):
             screen.blit(getTileCached(tilesetUi, tileIndex), 
                       (playRect.x + i * tileSize, playRect.y))
-        
+
         # Logo
         tileIndex = 0
         for iy in range(2):
@@ -465,12 +472,8 @@ while running:
                 screen.blit(getTileCached(tilesetLogoUi, tileIndex),
                             (logoRect.x + ix * tileSize, logoRect.y + iy * tileSize))
                 tileIndex += 1
-    
+
     exitTile = 6 if exitRect.collidepoint(mouseX, mouseY) else 7
     screen.blit(getTileCached(tilesetUi, exitTile), exitRect.topleft)
-    
-    if currentMode != a:
-        print(currentMode)
-        a = currentMode
     pygame.display.flip()
 pygame.quit()
