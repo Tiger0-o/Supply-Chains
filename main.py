@@ -187,6 +187,7 @@ def drawRoad(sheet=roadTileCache, mouseCoord=(0, 0)):
 
 #Road Tile deletion
 def deleteRoad(mouseCoord=(0, 0)):
+    print(roadTileCache)
     global currentRoad
     currentRoad = None  # Reset the current road selection or status
 
@@ -201,12 +202,14 @@ def deleteRoad(mouseCoord=(0, 0)):
     bridgeNumber = bridgeLocate(bridgeTileCache, contains=mouseCoord)
     if bridgeNumber is not None and isWater:
         deleteBridge(bridgeTileCache, bridgeNumber)
+    elif mouseCoord in roadTileCache:
         roadTileCache[mouseCoord] = [
             tile for tile in roadTileCache[mouseCoord] if tile in bridgePart
         ]
         if not roadTileCache[mouseCoord]:
             del roadTileCache[mouseCoord]
-
+    print(roadTileCache)
+    
 # Building Placement
 global validTiles, buildingCache
 buildingCache = {}
