@@ -1,5 +1,6 @@
 import pygame, requests, io, sys, csv, random 
-from collections import deque #For Breadth-first search garbage later on
+from collections import deque
+import heapq
 
 # Asset Urls
 tilesetLandURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/TilesetLand.png"
@@ -11,7 +12,7 @@ tilesetBuildingURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/9
 
 buttonUIURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/cf7bc343463db246c12b7dd2baf18744e0877d9d/Button%20UI.png"
 logoUIURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/Logo%20UI.png"
-
+fontURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/0c43d5e83145e5ffc92996eb2f8b1b69f19f0a06/Fredoka-Bold.ttf"
 
 riverBasinURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/River%20Basin%20Level.csv"
 greenPlainsURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/Green%20Plains.csv"
@@ -21,7 +22,7 @@ testPlainsURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14
 pygame.init()
 pygame.display.set_caption("Supply Chains")
 clock = pygame.time.Clock()
-font = pygame.font.SysFont("arial", 24)
+font = pygame.font.Font(io.BytesIO(requests.get(fontURL).content), 50)
 tileSize = 32
 avaliableMaps = [riverBasinURL, greenPlainsURL]
 currentMap = random.choice(avaliableMaps)
@@ -29,7 +30,6 @@ currentMap = random.choice(avaliableMaps)
 global currentRoad, hiddenBridges
 placementError = "You cannot place here."
 
-# CSV Loading
 def loadData(url=riverBasinURL):
     try:
         csvResp = requests.get(url).text
@@ -46,7 +46,6 @@ mapHeight = len(mapData)
 mapWidth = max(len(row) for row in mapData)
 screen = pygame.display.set_mode((mapWidth * tileSize, mapHeight * tileSize))
 
-# Asset Loading
 def loadImage(url):
     try:
         response = requests.get(url)
@@ -63,12 +62,10 @@ tilesetBuilding = loadImage(tilesetBuildingURL)
 tilesetUI = loadImage(buttonUIURL)
 tilesetLogoUI = loadImage(logoUIURL)
 
-#Set windows icon
 pygame.display.set_icon(loadImage(
     "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/72a0b726fe279470a5b22a9f5aea50df0028eee2/WindowIcon.png"
     ))
 
-# Tile Functions
 def getTileById(sheet, tileId):
     cols = sheet.get_width() // tileSize
     x = (tileId % cols) * tileSize
@@ -85,16 +82,14 @@ def getTileCached(sheet, tileId):
         tileCache[key] = getTileById(sheet, tileId)
     return tileCache[key]
 
-# Map Loading
 def drawMap(sheet):
     for y, row in enumerate(mapData):
         for x, tileId in enumerate(row):
-            if (x, y) in buildingCache.keys(): # type: ignore
+            if (x, y) in buildingCache.keys():
                 continue
             tile = getTileCached(sheet, tileId)
             screen.blit(tile, (x * tileSize, y * tileSize))
 
-# Road Tile Placement
 global bridgeTileCache, roadTileCache, roadTileMapping
 bridgeTileCache = {}
 roadTileCache = {}
@@ -112,14 +107,13 @@ def findRoadTypeByID(sheet, surface):
         if surface in ids:
             return roadType
     return None
-#Editing bridges in bridgeTileCache
+
 def editBridge(cache=bridgeTileCache, tile=None, coord=(0,0), bridgeNumber=0):
     if bridgeNumber not in cache:
         cache[bridgeNumber] = []
     cache[bridgeNumber].append([coord, tile])
     bridgeCollision(cache)
 
-#Deleting entire bridges from bridgeTileCache and updating roadTileCache
 def deleteBridge(cache=bridgeTileCache, bridgeNumber=0):
     if bridgeNumber not in cache:
         return
@@ -133,7 +127,6 @@ def deleteBridge(cache=bridgeTileCache, bridgeNumber=0):
                 del roadTileCache[coord]
     del cache[bridgeNumber]
 
-#Detects bridge collision
 def bridgeCollision(cache=bridgeTileCache):
     removeTile = dict()
     removeBridge = set()
@@ -152,7 +145,6 @@ def bridgeCollision(cache=bridgeTileCache):
         if bridge in cache:
             deleteBridge(cache, bridge)
 
-#Locates the bridge number if it has a tile in contains
 def bridgeLocate(cache=bridgeTileCache, contains=(0, 0)):
     for bridgeNumber, tiles in bridgeTileCache.items():
         for coord, tile in tiles:
@@ -160,7 +152,6 @@ def bridgeLocate(cache=bridgeTileCache, contains=(0, 0)):
                 return bridgeNumber
     return None
 
-#Updates roadTileMapping for tile changing/orientations
 def roadMapping(sheet=tileData):
     for y, row in enumerate(sheet):
         for x, tileId in enumerate(row):
@@ -169,7 +160,6 @@ def roadMapping(sheet=tileData):
                 if tile not in roadTileMapping[x]:
                     roadTileMapping[x].append(tile)
 
-#Updates the map to show the roads placed
 def drawRoad(sheet=roadTileCache, mouseCoord=(0, 0)):
     roadId = [item for i in range(4) for item in roadTileMapping[i]]
     hiddenTiles = []
@@ -196,10 +186,9 @@ def drawRoad(sheet=roadTileCache, mouseCoord=(0, 0)):
                     continue
                 screen.blit(tile, coord)
 
-#Road Tile deletion
 def deleteRoad(mouseCoord=(0, 0)):
     global currentRoad
-    currentRoad = None  # Reset the current road selection or status
+    currentRoad = None
 
     x, y = mouseCoord
     isWater = mapData[y // tileSize][x // tileSize] in range(12, 17)
@@ -219,12 +208,10 @@ def deleteRoad(mouseCoord=(0, 0)):
         if not roadTileCache[mouseCoord]:
             del roadTileCache[mouseCoord]
 
-# Building Placement
 global validTiles, buildingCache
 buildingCache = {}
 validTiles = []  
 
-#Updates buildingCache with random building coordinates
 def placeBuilding(sheet=validTiles, depots=1, factories=1):
     buildingCache = {}
     if not validTiles or len(validTiles) < depots+factories: 
@@ -265,12 +252,10 @@ def placeBuilding(sheet=validTiles, depots=1, factories=1):
     drawBuildings()
     return buildingCache
 
-#Draws building to map
 def drawBuildings():
-    for pos, tile in buildingCache.items(): # type: ignore # type: ignore
+    for pos, tile in buildingCache.items():
         screen.blit(tile, pos)
 
-#Updates validTiles with tiles that do not have a water tile within 3x3 tile range
 def validBuildingTiles():
     validTiles = []  
     
@@ -290,7 +275,7 @@ def validBuildingTiles():
                 if not validLocation:
                     break
             
-            if validLocation and (x * tileSize, y * tileSize) not in [(416, 32),(384, 32),(352, 32)]: #Exit, Settings, Submit button doesn't appear in validTiles
+            if validLocation and (x * tileSize, y * tileSize) not in [(416, 32),(384, 32),(352, 32)]:
                 validTiles.append((x * tileSize, y * tileSize))
     return validTiles
 
@@ -307,121 +292,193 @@ validConnections = {
     (2, 3):["W", "E", "S"],
     (3, 0):["N", "E", "S", "W"],
     (3, 1):["N", "E", "S", "W"],
-    (4, 0):["N", "S"],
-    (4, 1):["E", "W"],
-    (5, 0):["N", "S"],
-    (5, 1):["E", "W"]
+    (4, 0):[],
+    (4, 1):["N", "S"],
+    (4, 2):[],
+    (4, 3):[],
+    (4, 4):["W", "E"],
+    (4, 5):[],
+    (5, 0):[],
+    (5, 1):["N", "S"],
+    (5, 2):["N", "S"],
+    (5, 3):[],
+    (5, 4):[],
+    (5, 5):["W", "E"],
+    (5, 6):["W", "E"],
+    (5, 7):[]
 }
 
 pathWeights = {
-    (0, 1, 2, 3): 1.5, # Roads have 1.5x Cost
-    (4, 5): 2} # Bridges have 2x Cost
+    (0, 1, 2, 3): 1.5,
+    (4, 5): 2
+}
 
-# Check if all deports/factories are connected via a valid path
 def validPath():
-    depot = []
-    factory = []
-
-    buildingTypeCache = {}
-    for coord, building in buildingCache.items():
-        for tileId in range(5):  # 0-3 are depots, 4 is factory
-            reference_tile = getTileById(tilesetBuilding, tileId)
-            if (building.get_size() == reference_tile.get_size() and 
-                building.get_at((16, 16)) == reference_tile.get_at((16, 16))):  # Sample center pixel
-                buildingTypeCache[coord] = tileId
-                break
+    roadId = [item for i in range(4) for item in roadTileMapping[i]]   
+    bridgeId = [roadTileMapping[5][i] for i in [1, 2, 5, 6]] + [roadTileMapping[4][i] for i in [1, 4]]
+    factoryTile = getTileById(tilesetBuilding, 4)
+    depots = []
+    factories = []
     
-    # Categorize buildings
-    for coord, tileId in buildingTypeCache.items():
-        if tileId in range(4):  # Depot tiles (0-3)
-            depot.append(coord)
-        elif tileId == 4:  # Factory tile
-            factory.append(coord)
+    for (px, py), tile in buildingCache.items():
+        if pygame.image.tostring(factoryTile, 'RGBA') == pygame.image.tostring(tile, 'RGBA'):
+            factories.append((px, py))
+        else:
+            depots.append((px, py))
 
-    print(f"Debug: Found {len(factory)} factories and {len(depot)} depots")
-    print(f"Factories at: {factory}")
-    print(f"Depots at: {depot}")
-    
-    if not factory or not depot:
-        print("Debug: Missing factories or depots")
+    if not factories or not depots:
         return False
 
-    directions = {
+    oppositeDirections = {"N": "S", "S": "N", "E": "W", "W": "E"}
+    directionMapping = {
         "N": (0, -tileSize),
         "S": (0, tileSize),
         "E": (tileSize, 0),
         "W": (-tileSize, 0)
     }
-
-    for factoryPos in factory:
-        foundDepot = False
+    
+    for factory in factories:
         visited = set()
-        queue = deque([factoryPos])
-
+        queue = deque([factory])
+        found = False
+        
         while queue:
-            x, y = queue.popleft()
-            if (x, y) in visited:
+            global current
+            current = queue.popleft()
+            if current in visited:
                 continue
-            visited.add((x, y))
-
-            if (x, y) in depot:
-                foundDepot = True
+            visited.add(current)
+            
+            if current in depots:
+                found = True
                 break
 
-            if (x, y) in buildingCache:
-                for direction in directions.values():
-                    nx, ny = x + direction[0], y + direction[1]
-                    if 0 <= nx < mapWidth * tileSize and 0 <= ny < mapHeight * tileSize:
-                        if (nx, ny) not in visited:
-                            if (nx, ny) in roadTileCache or (nx, ny) in buildingCache:
-                                queue.append((nx, ny))
-            
-            # If we're on a road tile, check valid connections
-            elif (x, y) in roadTileCache:
-                # Find what type of road tile this is
-                roadTile = roadTileCache[(x, y)][0] if roadTileCache[(x, y)] else None
-                if roadTile:
-                    # Find the road type and orientation
-                    rType = None
-                    roadOrientation = None
-                    
-                    for rType, tiles in roadTileMapping.items():
-                        if roadTile in tiles:
-                            rType = rType
-                            roadOrientation = tiles.index(roadTile)
-                            break
-                    
-                    # Get valid connections for this road tile
-                    if rType is not None and (rType, roadOrientation) in validConnections:
-                        connections = validConnections[(rType, roadOrientation)]
+            for dx, dy in directionMapping.values():
+                nx, ny = current[0] + dx, current[1] + dy
+                neighbor = (nx, ny)
+
+                if not (0 <= nx < mapWidth * tileSize and 0 <= ny < mapHeight * tileSize): continue 
+                if neighbor in buildingCache and neighbor not in visited:
+                    queue.append(neighbor)
+                    continue  
+                if neighbor not in roadTileCache: 
+                    continue
+
+                for road in roadTileCache[neighbor]:
+                    if road not in roadId and not road in bridgeId: continue
                         
-                        for direction in connections:
-                            if direction in directions:
-                                nx, ny = x + directions[direction][0], y + directions[direction][1]
-                                if 0 <= nx < mapWidth * tileSize and 0 <= ny < mapHeight * tileSize:
-                                    if (nx, ny) not in visited:
-                                        if (nx, ny) in roadTileCache or (nx, ny) in buildingCache:
-                                            queue.append((nx, ny))
+                    roadTypeCoord = None
+                    for key, tiles in roadTileMapping.items():
+                        if road in tiles:
+                            roadTypeCoord = (key, tiles.index(road))
+                            break
+                    if not roadTypeCoord or roadTypeCoord not in validConnections:
+                        continue
+                        
+                    validDirs = validConnections[roadTypeCoord]
+                    direction = None
+                    for dir, (dx, dy) in directionMapping.items():
+                        if (current[0] - dx, current[1] - dy) == neighbor:
+                            direction = dir
+                            break
 
-        if not foundDepot:
-            print(f"Debug: Factory at {factoryPos} could not reach any depot")
-            return False
-        else:
-            print(f"Debug: Factory at {factoryPos} successfully connected to depot")
-    return True    
+                    if direction not in validDirs: continue
+                    for prevRoad in roadTileCache.get(current, [None]):
+                        if prevRoad is None and not (prevRoad in roadId or prevRoad in bridgeId):
+                            if current in depots or current in factories:
+                                if direction in ["N", "E", "S", "W"]:
+                                    queue.append(neighbor)
+                        if prevRoad in roadId or prevRoad in bridgeId: 
+                            nextTypeCoord = None
+                            for key, tiles in roadTileMapping.items():
+                                if prevRoad in tiles:
+                                    nextTypeCoord = (key, tiles.index(prevRoad))
+                                    break
+                            if not nextTypeCoord or nextTypeCoord not in validConnections: 
+                                continue
+                            if oppositeDirections[direction] in validConnections[nextTypeCoord]:
+                                queue.append(neighbor)
+                                break
+    if not found:
+        return False 
+    return True
 
-            
-
-
-
-
-
-# Calculate the score
 def calculateScore():
-    pass
+    roadId = [item for i in range(4) for item in roadTileMapping[i]]
+    factoryTile = getTileById(tilesetBuilding, 4)
+    depots = []
+    factories = []
+    
+    for (px, py), tile in buildingCache.items():
+        if pygame.image.tostring(factoryTile, 'RGBA') == pygame.image.tostring(tile, 'RGBA'):
+            factories.append((px, py))
+        else:   
+            depots.append((px, py))
+    
+    if not factories or not depots:
+        return None
+    
+    # Precompute optimal distances
+    totalOptimal = 0
+    for fx, fy in factories:
+        min_dist = float('inf')
+        for dx, dy in depots:
+            dist = abs(fx - dx) + abs(fy - dy)
+            min_dist = min(min_dist, dist)
+        totalOptimal += min_dist
 
+    # Dijkstra for all factories
+    totalCurrent = 0
+    for factory in factories:
+        dist = {factory: 0}
+        pq = [(0, factory)]
+        found_depot = None
+        
+        while pq:
+            d, pos = heapq.heappop(pq)
+            if d != dist.get(pos, float('inf')):
+                continue
+                
+            if pos in depots:
+                found_depot = d
+                break
+                
+            # Process neighbors
+            for dx, dy in [(0, -tileSize), (0, tileSize), 
+                          (tileSize, 0), (-tileSize, 0)]:
+                nx, ny = pos[0] + dx, pos[1] + dy
+                neighbor = (nx, ny)
+                
+                if not (0 <= nx < mapWidth*tileSize and 0 <= ny < mapHeight*tileSize):
+                    continue
+                    
+                # Calculate weight
+                weight = 1.0
+                if neighbor in roadTileCache:
+                    for road in roadTileCache[neighbor]:
+                        if road in roadId:
+                            for key, tiles in roadTileMapping.items():
+                                if road in tiles:
+                                    if key in (4, 5):
+                                        weight = 2.0
+                                    else:
+                                        weight = 1.5
+                                    break
+                
+                new_dist = d + weight
+                if new_dist < dist.get(neighbor, float('inf')):
+                    dist[neighbor] = new_dist
+                    heapq.heappush(pq, (new_dist, neighbor))
+        
+        if found_depot is None:
+            return None
+        totalCurrent += found_depot
+    
+    # Calculate final score
+    ratio = totalOptimal / totalCurrent
+    score = min(9999, max(1, int(9999 * ratio)))
+    return score
 
-# Clock class - too annoying to make using functions
 class Timer:
     def __init__(self):
         self.startTime = None
@@ -440,9 +497,8 @@ class Timer:
     def elapsed(self):
         if not self.running or self.startTime is None:
             return 0
-        return (pygame.time.get_ticks() - self.startTime) / 1000.0  # seconds
+        return (pygame.time.get_ticks() - self.startTime) / 1000.0
 
-# Main Loop
 timer = Timer()
 running = True
 currentRoad = None
@@ -460,7 +516,6 @@ submitRect = pygame.Rect(tileSize * 11, tileSize * 1, tileSize, tileSize)
 settingsRect = pygame.Rect(tileSize * 12, tileSize * 1, tileSize, tileSize)
 
 while running:
-    #Mouse Positioning
     mouseX, mouseY = pygame.mouse.get_pos()
     gridX = (mouseX // tileSize) * tileSize
     gridY = (mouseY // tileSize) * tileSize
@@ -476,38 +531,47 @@ while running:
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             currentMode = "building"
 
-            #Exit button clicked logic
             if exitRect.collidepoint(event.pos):
                 if state == "game":
                     mapData = loadData(riverBasinURL)
                     state = "menu"
                     roadTileCache.clear()
                     bridgeTileCache.clear()
+                    currentRoad = None
                 elif state == "menu":
                     running = False
             elif settingsRect.collidepoint(event.pos):
                 print("Settings currently not added into the game. Sorry!")
             elif submitRect.collidepoint(event.pos):
-                print(validPath())
-                #ADD CODE HERE LATER FOR GAME END
+                isValid = validPath()
+                print(f"Path valid: {isValid}")
+                if isValid:
+                    score = calculateScore()
+                    scoreText = font.render(f"{score}", True, (232, 207, 166))
+                    drawMap(tilesetLandDark)
+                    screen.blit(scoreText, (tileSize * 6, tileSize * 5))
+                    pygame.display.flip()
+                    pygame.time.wait(2500)
+                    state = "menu"
+                    roadTileCache.clear()
+                    bridgeTileCache.clear()
+                    currentRoad = None
             elif state == "menu" and playRect.collidepoint(event.pos):
-                mapData = loadData(riverBasinURL) # LOAD MAP HERE FOR GAME
+                mapData = loadData(riverBasinURL)
                 validTiles = validBuildingTiles()
                 buildingCache = placeBuilding(sheet=validTiles, depots=2, factories=2)
                 state = "game"
             elif state == "game" and currentMode == "building":
-                # Update roadTileMapping for placement cache
                 if currentRoad is None:
                     print("Currently placing nothing.")
                     continue
-                elif (gridX, gridY) in buildingCache.keys(): # type: ignore
+                elif (gridX, gridY) in buildingCache.keys():
                     print("Cannot place on depot/factory.")
                     continue
                 bridgeNumber = 0 if not bridgeTileCache else max(bridgeTileCache.keys()) + 1
                 isValid = False
                 isLand = []
 
-                # Valid Bridge placement check
                 if index in [4, 5]:
                     offset = [
                         [[0, 1], [0, -1], [1, 0], [-1, 0]],
@@ -530,7 +594,6 @@ while running:
                         if isLand[i] and isLand[i + 2] and not isLand[i + 1] and isLand[i] == isLand[i + 2] and isLand[i] != isLand[i + 1]:
                             isValid = True
 
-                # Update roadTileCache to reflect changes
                 isWater = mapData[gridY // tileSize][gridX // tileSize] in range(12, 17)
                 isBridge = index in [4, 5]
                 roadId = [item for i in range(4) for item in roadTileMapping[i]]
@@ -612,36 +675,32 @@ while running:
 
     if state == "game":
         hiddenBridges = list()
-        # Road Drawing to cursor
         drawMap(tilesetLand)
         drawBuildings()
 
-        # Tile outline
         if (not exitRect.collidepoint(mouseX, mouseY) 
             and not settingsRect.collidepoint(mouseX, mouseY) 
             and not submitRect.collidepoint(mouseX, mouseY)):
-            if (gridX, gridY) in buildingCache.keys(): # type: ignore
-                pygame.draw.rect(screen, (255,223,186), outlineRect, width=1) #Hovering over building
+            if (gridX, gridY) in buildingCache.keys():
+                pygame.draw.rect(screen, (255,223,186), outlineRect, width=1)
             elif currentMode == "building":
                 pygame.draw.rect(screen, (255, 255, 255), outlineRect, width=1)
             elif currentMode == "deleting":
                 if not timer.running:
                     timer.start()
                 if timer.elapsed() <= 0.175:
-                    pygame.draw.rect(screen, (255,179,186), outlineRect, width=1) # Delete mode
+                    pygame.draw.rect(screen, (255,179,186), outlineRect, width=1)
                 else:
                     timer.reset()
                     timer.stop()
                     currentMode = "building"
                     pygame.draw.rect(screen, (255, 255, 255), outlineRect, width=1)
 
-
-        # Tile bilt current tile onto screen (cursor)
         if (currentRoad and not exitRect.collidepoint(mouseX, mouseY) 
             and not settingsRect.collidepoint(mouseX, mouseY) 
             and not submitRect.collidepoint(mouseX, mouseY)):
             
-            if (gridX, gridY) in buildingCache.keys(): # type: ignore
+            if (gridX, gridY) in buildingCache.keys():
                 continue
             bridgeId = [roadTileMapping[5][i] for i in [1, 2, 5, 6]] + [roadTileMapping[4][i] for i in [1, 4]]
             currentIndex = roadTileMapping[index].index(currentRoad)
@@ -697,16 +756,13 @@ while running:
 
         drawRoad(roadTileCache, (gridX, gridY))
 
-
     elif state == "menu":
-        # Play Button
         drawMap(tilesetLandDark) 
         buttonTiles = range(3) if playRect.collidepoint(mouseX, mouseY) else range(3, 6)
         for i, tileIndex in enumerate(buttonTiles):
             screen.blit(getTileCached(tilesetUI, tileIndex), 
                       (playRect.x + i * tileSize, playRect.y))
 
-        # Logo
         tileIndex = 0
         for iy in range(2):
             for ix in range(6):
@@ -714,9 +770,9 @@ while running:
                             (logoRect.x + ix * tileSize, logoRect.y + iy * tileSize))
                 tileIndex += 1
 
-    exitTile = 6 if exitRect.collidepoint(mouseX, mouseY) else 7 #Exit Button
+    exitTile = 6 if exitRect.collidepoint(mouseX, mouseY) else 7
     screen.blit(getTileCached(tilesetUI, exitTile), exitRect.topleft)
-    settingTile = 8 if settingsRect.collidepoint(mouseX, mouseY) else 9 #Setting Button
+    settingTile = 8 if settingsRect.collidepoint(mouseX, mouseY) else 9
     screen.blit(getTileCached(tilesetUI, settingTile), settingsRect.topleft)
 
     if state == "game":
