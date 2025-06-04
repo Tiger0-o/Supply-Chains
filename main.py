@@ -318,7 +318,7 @@ def validPath():
     factoryTile = getTileById(tilesetBuilding, 4)
     depots = []
     factories = []
-    
+
     for (px, py), tile in buildingCache.items():
         if pygame.image.tostring(factoryTile, 'RGBA') == pygame.image.tostring(tile, 'RGBA'):
             factories.append((px, py))
@@ -336,71 +336,115 @@ def validPath():
         "W": (-tileSize, 0)
     }
     
+    factoryHasValidPath = {factory: False for factory in factories}
     for factory in factories:
         visited = set()
         queue = deque([factory])
         found = False
+        visited.add(factory)
         
         while queue:
-            global current
-            current = queue.popleft()
-            if current in visited:
-                continue
-            visited.add(current)
+            currentTile = queue.popleft()
             
-            if current in depots:
+            if currentTile in depots:
                 found = True
+                factoryHasValidPath[factory] = True
                 break
-
-            for dx, dy in directionMapping.values():
-                nx, ny = current[0] + dx, current[1] + dy
-                neighbor = (nx, ny)
-
-                if not (0 <= nx < mapWidth * tileSize and 0 <= ny < mapHeight * tileSize): continue 
-                if neighbor in buildingCache and neighbor not in visited:
-                    queue.append(neighbor)
-                    continue  
-                if neighbor not in roadTileCache: 
+            if currentTile in factories and currentTile != factory:
+                continue
+            
+            # Check if current tile is a factory
+            isFactory = currentTile == factory
+            for direction, (dx, dy) in directionMapping.items():
+                neighborX, neighborY = currentTile[0] + dx, currentTile[1] + dy
+                neighborTile = (neighborX, neighborY)
+                
+                if not (0 <= neighborX < mapWidth * tileSize and 0 <= neighborY < mapHeight * tileSize) or neighborTile in visited:
                     continue
-
-                for road in roadTileCache[neighbor]:
-                    if road not in roadId and not road in bridgeId: continue
-                        
-                    roadTypeCoord = None
-                    for key, tiles in roadTileMapping.items():
-                        if road in tiles:
-                            roadTypeCoord = (key, tiles.index(road))
-                            break
-                    if not roadTypeCoord or roadTypeCoord not in validConnections:
+                if neighborTile in factories and neighborTile != factory:
+                    continue
+                
+                if isFactory:
+                    if neighborTile not in roadTileCache:
                         continue
                         
-                    validDirs = validConnections[roadTypeCoord]
-                    direction = None
-                    for dir, (dx, dy) in directionMapping.items():
-                        if (current[0] - dx, current[1] - dy) == neighbor:
-                            direction = dir
-                            break
-
-                    if direction not in validDirs: continue
-                    for prevRoad in roadTileCache.get(current, [None]):
-                        if prevRoad is None and not (prevRoad in roadId or prevRoad in bridgeId):
-                            if current in depots or current in factories:
-                                if direction in ["N", "E", "S", "W"]:
-                                    queue.append(neighbor)
-                        if prevRoad in roadId or prevRoad in bridgeId: 
-                            nextTypeCoord = None
-                            for key, tiles in roadTileMapping.items():
-                                if prevRoad in tiles:
-                                    nextTypeCoord = (key, tiles.index(prevRoad))
-                                    break
-                            if not nextTypeCoord or nextTypeCoord not in validConnections: 
-                                continue
-                            if oppositeDirections[direction] in validConnections[nextTypeCoord]:
-                                queue.append(neighbor)
+                    roadConnected = False
+                    for roadTile in roadTileCache[neighborTile]:
+                        if roadTile not in roadId and roadTile not in bridgeId:
+                            continue
+                            
+                        roadTypeCoord = None
+                        for key, tiles in roadTileMapping.items():
+                            if roadTile in tiles:
+                                roadTypeCoord = (key, tiles.index(roadTile))
                                 break
-    if not found:
-        return False 
-    return True
+                                
+                        if not roadTypeCoord or roadTypeCoord not in validConnections:
+                            continue
+                            
+                        validDirs = validConnections[roadTypeCoord]
+                        oppositeDir = oppositeDirections[direction]
+                        
+                        if oppositeDir in validDirs:
+                            roadConnected = True
+                            break
+                    
+                    if roadConnected:
+                        visited.add(neighborTile)
+                        queue.append(neighborTile)
+                
+                elif currentTile in roadTileCache:
+                    currentRoadConnections = set()
+                    for currentRoadTile in roadTileCache[currentTile]:
+                        if currentRoadTile not in roadId and currentRoadTile not in bridgeId:
+                            continue
+                            
+                        currentRoadTypeCoord = None
+                        for key, tiles in roadTileMapping.items():
+                            if currentRoadTile in tiles:
+                                currentRoadTypeCoord = (key, tiles.index(currentRoadTile))
+                                break
+                                
+                        if not currentRoadTypeCoord or currentRoadTypeCoord not in validConnections:
+                            continue
+                        currentRoadConnections.update(validConnections[currentRoadTypeCoord])
+
+                    if direction not in currentRoadConnections:
+                        continue
+
+                    if neighborTile in depots:
+                        found = True
+                        factoryHasValidPath[factory] = True
+                        break
+                    
+                    elif neighborTile in roadTileCache:
+                        neighborRoadConnected = False
+                        for neighborRoadTile in roadTileCache[neighborTile]:
+                            if neighborRoadTile not in roadId and neighborRoadTile not in bridgeId:
+                                continue
+                                
+                            neighborRoadTypeCoord = None
+                            for key, tiles in roadTileMapping.items():
+                                if neighborRoadTile in tiles:
+                                    neighborRoadTypeCoord = (key, tiles.index(neighborRoadTile))
+                                    break
+                                    
+                            if not neighborRoadTypeCoord or neighborRoadTypeCoord not in validConnections:
+                                continue
+                            neighborValidDirs = validConnections[neighborRoadTypeCoord]
+                            oppositeDir = oppositeDirections[direction]
+                            if oppositeDir in neighborValidDirs:
+                                neighborRoadConnected = True
+                                break
+                        if neighborRoadConnected:
+                            visited.add(neighborTile)
+                            queue.append(neighborTile)
+        if not found:
+            return False
+    
+    # All factories must have valid paths to depots
+    return all(factoryHasValidPath.values())
+
 
 global timer, speed
 class Timer:
