@@ -15,7 +15,7 @@ logoUIURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc
 fontURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/0c43d5e83145e5ffc92996eb2f8b1b69f19f0a06/Fredoka-Bold.ttf"
 
 riverBasinURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/River%20Basin%20Level.csv"
-greenPlainsURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/Green%20Plains.csv"
+greenPlainsURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/8cb308005606b15c108ff675a13e9b1022fd1ada/Green%20Plains.csv"
 testPlainsURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/Test%20Plains.csv"
 
 # Initialization
@@ -25,7 +25,6 @@ clock = pygame.time.Clock()
 font = pygame.font.Font(io.BytesIO(requests.get(fontURL).content), 50)
 tileSize = 32
 avaliableMaps = [riverBasinURL, greenPlainsURL]
-currentMap = random.choice(avaliableMaps)
 
 global currentRoad, hiddenBridges
 placementError = "You cannot place here."
@@ -496,7 +495,7 @@ while running:
                     speed.reset()
             elif state == "menu" and playRect.collidepoint(event.pos):
                 speed.start()
-                mapData = loadData(riverBasinURL)
+                mapData = loadData(random.choice(avaliableMaps))
                 validTiles = validBuildingTiles()
                 buildingCache = placeBuilding(sheet=validTiles, depots=2, factories=2)
                 state = "game"
