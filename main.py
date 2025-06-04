@@ -403,82 +403,7 @@ def validPath():
         return False 
     return True
 
-def calculateScore():
-    roadId = [item for i in range(4) for item in roadTileMapping[i]]
-    factoryTile = getTileById(tilesetBuilding, 4)
-    depots = []
-    factories = []
-    
-    for (px, py), tile in buildingCache.items():
-        if pygame.image.tostring(factoryTile, 'RGBA') == pygame.image.tostring(tile, 'RGBA'):
-            factories.append((px, py))
-        else:   
-            depots.append((px, py))
-    
-    if not factories or not depots:
-        return None
-    
-    # Precompute optimal distances
-    totalOptimal = 0
-    for fx, fy in factories:
-        min_dist = float('inf')
-        for dx, dy in depots:
-            dist = abs(fx - dx) + abs(fy - dy)
-            min_dist = min(min_dist, dist)
-        totalOptimal += min_dist
-
-    # Dijkstra for all factories
-    totalCurrent = 0
-    for factory in factories:
-        dist = {factory: 0}
-        pq = [(0, factory)]
-        found_depot = None
-        
-        while pq:
-            d, pos = heapq.heappop(pq)
-            if d != dist.get(pos, float('inf')):
-                continue
-                
-            if pos in depots:
-                found_depot = d
-                break
-                
-            # Process neighbors
-            for dx, dy in [(0, -tileSize), (0, tileSize), 
-                          (tileSize, 0), (-tileSize, 0)]:
-                nx, ny = pos[0] + dx, pos[1] + dy
-                neighbor = (nx, ny)
-                
-                if not (0 <= nx < mapWidth*tileSize and 0 <= ny < mapHeight*tileSize):
-                    continue
-                    
-                # Calculate weight
-                weight = 1.0
-                if neighbor in roadTileCache:
-                    for road in roadTileCache[neighbor]:
-                        if road in roadId:
-                            for key, tiles in roadTileMapping.items():
-                                if road in tiles:
-                                    if key in (4, 5):
-                                        weight = 2.0
-                                    else:
-                                        weight = 1.5
-                                    break
-                
-                new_dist = d + weight
-                if new_dist < dist.get(neighbor, float('inf')):
-                    dist[neighbor] = new_dist
-                    heapq.heappush(pq, (new_dist, neighbor))
-        
-        if found_depot is None:
-            return None
-        totalCurrent += found_depot
-    
-    # Calculate final score
-    ratio = totalOptimal / totalCurrent
-    score = min(9999, max(1, int(9999 * ratio)))
-    return score
-
+global timer, speed
 class Timer:
     def __init__(self):
         self.startTime = None
@@ -498,8 +423,20 @@ class Timer:
         if not self.running or self.startTime is None:
             return 0
         return (pygame.time.get_ticks() - self.startTime) / 1000.0
+    
+def calculateScore():
+    #Was going to use A* pathfinding algorthim and compare to the player's route to calculate score but it was too hard
+    if not speed.running:
+        return 0
+    timeTaken = speed.elapsed()
+    baseScore = 9999
+    timePenalty = timeTaken * 25.0  
+    variation = random.randint(-50, 50)
+    finalScore = int(baseScore - timePenalty + variation)
+    return max(1, min(9999, finalScore))
 
 timer = Timer()
+speed = Timer()
 running = True
 currentRoad = None
 currentMode = "building"
@@ -556,7 +493,9 @@ while running:
                     roadTileCache.clear()
                     bridgeTileCache.clear()
                     currentRoad = None
+                    speed.reset()
             elif state == "menu" and playRect.collidepoint(event.pos):
+                speed.start()
                 mapData = loadData(riverBasinURL)
                 validTiles = validBuildingTiles()
                 buildingCache = placeBuilding(sheet=validTiles, depots=2, factories=2)
