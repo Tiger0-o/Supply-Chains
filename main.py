@@ -469,13 +469,16 @@ class Timer:
 def calculateScore():
     #Was going to use A* pathfinding algorthim and compare to the player's route to calculate score but it was too hard
     if not speed.running:
-        return 0
+        return "None"
     timeTaken = speed.elapsed()
-    baseScore = 9999
+    baseScore = 1000
     timePenalty = timeTaken * 25.0  
     variation = random.randint(-50, 50)
     finalScore = int(baseScore - timePenalty + variation)
-    return max(1, min(9999, finalScore))
+    score = max(1, min(9999, finalScore))
+    if score < 1000:
+        return "0" * (4 - len(str(score))) + str(score)
+    return str(score)
 
 timer = Timer()
 speed = Timer()
@@ -812,5 +815,6 @@ while running:
     if state == "game":
         submitTile = 10 if submitRect.collidepoint(mouseX, mouseY) else 11
         screen.blit(getTileCached(tilesetUI, submitTile), submitRect.topleft)
+    print(calculateScore())
     pygame.display.flip()
 pygame.quit()
