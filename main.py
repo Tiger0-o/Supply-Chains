@@ -10,9 +10,11 @@ tilesetRoadURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e1
 tilesetRoadIDURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/Road%20Tileset%20ID.csv"
 tilesetBuildingURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/TilesetBuildings.png"
 
-buttonUIURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/cf7bc343463db246c12b7dd2baf18744e0877d9d/Button%20UI.png"
+buttonUIURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/cee5f3844e0ef08f5e27d42df372283ab2b00162/Button%20UI.png"
 logoUIURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/Logo%20UI.png"
-fontURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/0c43d5e83145e5ffc92996eb2f8b1b69f19f0a06/Fredoka-Bold.ttf"
+fontBoldURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/0c43d5e83145e5ffc92996eb2f8b1b69f19f0a06/Fredoka-Bold.ttf"
+fontMediumURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/3e6f66167a9a4ce12c985c05f67b5604e6672751/Fredoka-Medium.ttf"
+fontSemiBoldURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/3e6f66167a9a4ce12c985c05f67b5604e6672751/Fredoka-SemiBold.ttf"
 
 riverBasinURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/River%20Basin%20Level.csv"
 greenPlainsURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/8cb308005606b15c108ff675a13e9b1022fd1ada/Green%20Plains.csv"
@@ -22,9 +24,11 @@ testPlainsURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14
 pygame.init()
 pygame.display.set_caption("Supply Chains")
 clock = pygame.time.Clock()
-font = pygame.font.Font(io.BytesIO(requests.get(fontURL).content), 50)
 tileSize = 32
 avaliableMaps = [riverBasinURL, greenPlainsURL]
+
+fontBold = pygame.font.Font(io.BytesIO(requests.get(fontBoldURL).content), 65)
+fontSemiBold = pygame.font.Font(io.BytesIO(requests.get(fontSemiBoldURL).content), 16)
 
 global currentRoad, hiddenBridges
 placementError = "You cannot place here."
@@ -214,7 +218,6 @@ validTiles = []
 def placeBuilding(sheet=validTiles, depots=1, factories=1):
     buildingCache = {}
     if not validTiles or len(validTiles) < depots+factories: 
-        print("Insufficent valid tiles")
         return
     availableTiles = validTiles.copy()
     factoryPositions = []
@@ -238,7 +241,6 @@ def placeBuilding(sheet=validTiles, depots=1, factories=1):
                 availableTiles.remove(tile)
 
     if len(availableTiles) < depots:
-        print("Insufficient valid tiles for depots after factory placement restrictions")
         return
 
     for _ in range(depots):
@@ -274,7 +276,7 @@ def validBuildingTiles():
                 if not validLocation:
                     break
             
-            if validLocation and (x * tileSize, y * tileSize) not in [(416, 32),(384, 32),(352, 32)]:
+            if validLocation and (x * tileSize, y * tileSize) not in [(416, 32),(384, 32),(352, 32),(32,32)]:
                 validTiles.append((x * tileSize, y * tileSize))
     return validTiles
 
@@ -352,8 +354,7 @@ def validPath():
                 break
             if currentTile in factories and currentTile != factory:
                 continue
-            
-            # Check if current tile is a factory
+
             isFactory = currentTile == factory
             for direction, (dx, dy) in directionMapping.items():
                 neighborX, neighborY = currentTile[0] + dx, currentTile[1] + dy
@@ -441,8 +442,6 @@ def validPath():
                             queue.append(neighborTile)
         if not found:
             return False
-    
-    # All factories must have valid paths to depots
     return all(factoryHasValidPath.values())
 
 
@@ -486,6 +485,7 @@ currentMode = "building"
 
 index = 0
 state = "menu"
+prevState = str()
 mapData = loadData(riverBasinURL)
 roadMapping()
 
@@ -494,6 +494,7 @@ logoRect = pygame.Rect(tileSize * 5, tileSize * 4, tileSize * 5, tileSize * 2)
 exitRect = pygame.Rect(tileSize * 13, tileSize * 1, tileSize, tileSize)
 submitRect = pygame.Rect(tileSize * 11, tileSize * 1, tileSize, tileSize)
 settingsRect = pygame.Rect(tileSize * 12, tileSize * 1, tileSize, tileSize)
+helpRect = pygame.Rect(tileSize * 1, tileSize * 1, tileSize, tileSize)
 
 while running:
     mouseX, mouseY = pygame.mouse.get_pos()
@@ -520,28 +521,44 @@ while running:
                     currentRoad = None
                 elif state == "menu":
                     running = False
+                elif state == "help":
+                    state = prevState
             elif settingsRect.collidepoint(event.pos):
                 print("Settings currently not added into the game. Sorry!")
+            elif helpRect.collidepoint(event.pos):
+                if state != "help":
+                    prevState = state
+                    state = "help"
+                else:
+                    state = prevState
             elif submitRect.collidepoint(event.pos):
                 isValid = validPath()
-                print(f"Path valid: {isValid}")
                 if isValid:
-                    score = calculateScore()
-                    scoreText = font.render(f"{score}", True, (232, 207, 166))
                     drawMap(tilesetLandDark)
-                    screen.blit(scoreText, (tileSize * 6, tileSize * 5))
+                    score = calculateScore()
+                    scoreText = fontBold.render(f"{score}", True, (232, 207, 166))
+                    fontSemiBold = pygame.font.Font(io.BytesIO(requests.get(fontSemiBoldURL).content), 12)
+                    scoreDescription = fontSemiBold.render(f"Congratulations, you have beaten Supply Chains!", True, (232, 207, 166))
+
+                    screen.blit(scoreText, (tileSize * 5.5, tileSize * 4))
+                    screen.blit(scoreDescription, (tileSize * 3.5, tileSize * 6))
+                    
                     pygame.display.flip()
                     pygame.time.wait(2500)
+
                     state = "menu"
                     roadTileCache.clear()
                     bridgeTileCache.clear()
                     currentRoad = None
                     speed.reset()
+                else:
+                    print("You have not connected all factories to at least one depot. " \
+                          "Please try again.")
             elif state == "menu" and playRect.collidepoint(event.pos):
                 speed.start()
                 mapData = loadData(random.choice(avaliableMaps))
                 validTiles = validBuildingTiles()
-                buildingCache = placeBuilding(sheet=validTiles, depots=2, factories=2)
+                buildingCache = placeBuilding(sheet=validTiles, depots=random.randint(1,2), factories=random.randint(2,3))
                 state = "game"
             elif state == "game" and currentMode == "building":
                 if currentRoad is None:
@@ -661,8 +678,9 @@ while running:
         drawBuildings()
 
         if (not exitRect.collidepoint(mouseX, mouseY) 
-            and not settingsRect.collidepoint(mouseX, mouseY) 
-            and not submitRect.collidepoint(mouseX, mouseY)):
+            and not helpRect.collidepoint(mouseX, mouseY) 
+            and not submitRect.collidepoint(mouseX, mouseY)
+            and not settingsRect.collidepoint(mouseX, mouseY)):
             if (gridX, gridY) in buildingCache.keys():
                 pygame.draw.rect(screen, (255,223,186), outlineRect, width=1)
             elif currentMode == "building":
@@ -679,8 +697,9 @@ while running:
                     pygame.draw.rect(screen, (255, 255, 255), outlineRect, width=1)
 
         if (currentRoad and not exitRect.collidepoint(mouseX, mouseY) 
-            and not settingsRect.collidepoint(mouseX, mouseY) 
-            and not submitRect.collidepoint(mouseX, mouseY)):
+            and not helpRect.collidepoint(mouseX, mouseY) 
+            and not submitRect.collidepoint(mouseX, mouseY)
+            and not settingsRect.collidepoint(mouseX, mouseY)):
             
             if (gridX, gridY) in buildingCache.keys():
                 continue
@@ -749,11 +768,44 @@ while running:
         for iy in range(2):
             for ix in range(6):
                 screen.blit(getTileCached(tilesetLogoUI, tileIndex),
-                            (logoRect.x + ix * tileSize, logoRect.y + iy * tileSize))
+                            (logoRect.x + ix * tileSize + 0.5 * tileSize, logoRect.y + iy * tileSize))
                 tileIndex += 1
+
+    elif state == "help":
+        fontSemiBold = pygame.font.Font(io.BytesIO(requests.get(fontSemiBoldURL).content), 12)
+        drawMap(tilesetLandDark)
+        helpLines = [
+            "To win connect all factories to at least one depot.",
+            "",
+            "Controls:",
+            "  Number Keys 1-6 to choose between 6 different tiles to construct your network.",
+            "  \"R\" Key to rotate your current tile clockwise.",
+            "  \"Q\" Key to cancel current selection.",
+            "  Left click to place tile.",
+            "  Right click to delete the current tile under the cursor.",
+            "",
+            "Once complete click on the \"CheckMark\" button to submit network for a score.",
+        ]
+
+        screenCenterX = screen.get_width() // 2
+        screenCenterY = screen.get_height() // 2
+        lineHeight = fontSemiBold.get_height() + 4
+        totalTextHeight = len(helpLines) * lineHeight
+        startY = screenCenterY - (totalTextHeight // 2)
+
+        for i, line in enumerate(helpLines):
+            if line.strip():
+                textSurface = fontSemiBold.render(line, True, (232, 207, 166))
+                textX = screenCenterX - 220
+                textY = startY + (i * lineHeight)
+                screen.blit(textSurface, (textX, textY))
 
     exitTile = 6 if exitRect.collidepoint(mouseX, mouseY) else 7
     screen.blit(getTileCached(tilesetUI, exitTile), exitRect.topleft)
+
+    helpTile = 12 if helpRect.collidepoint(mouseX, mouseY) else 13
+    screen.blit(getTileCached(tilesetUI, helpTile), helpRect.topleft)
+
     settingTile = 8 if settingsRect.collidepoint(mouseX, mouseY) else 9
     screen.blit(getTileCached(tilesetUI, settingTile), settingsRect.topleft)
 
