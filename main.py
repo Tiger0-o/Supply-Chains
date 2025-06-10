@@ -471,7 +471,7 @@ def calculateScore():
     if not speed.running:
         return "None"
     timeTaken = speed.elapsed()
-    baseScore = 9999
+    baseScore = 1000
     timePenalty = timeTaken * 25.0  
     variation = random.randint(-50, 50)
     finalScore = int(baseScore - timePenalty + variation)

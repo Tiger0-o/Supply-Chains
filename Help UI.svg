@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 480 240">
+  <defs>
+    <style>
+      .cls-1 {
+        stroke-width: .75px;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4, .cls-5 {
+        stroke: #c49a6c;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-1, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-4, .cls-11, .cls-5 {
+        fill: #e8cfa6;
+      }
+
+      .cls-2, .cls-3 {
+        fill: none;
+      }
+
+      .cls-2, .cls-4 {
+        stroke-width: 2px;
+      }
+
+      .cls-12 {
+        opacity: .25;
+      }
+
+      .cls-13 {
+        fill: #c0d470;
+      }
+
+      .cls-6 {
+        font-size: 4.62px;
+      }
+
+      .cls-6, .cls-7 {
+        font-family: pixelFont-7-8x14-sproutLands, pixelFont-7-8x14-sproutLands;
+      }
+
+      .cls-7 {
+        font-size: 4.62px;
+      }
+
+      .cls-8 {
+        font-family: Fredoka-Regular, Fredoka;
+        font-size: 8.56px;
+        font-variation-settings: 'wght' 400, 'wdth' 100;
+      }
+
+      .cls-9 {
+        font-size: 17.83px;
+      }
+
+      .cls-9, .cls-10, .cls-11 {
+        font-family: Fredoka-SemiBold, Fredoka;
+        font-variation-settings: 'wght' 600, 'wdth' 100;
+        font-weight: 600;
+      }
+
+      .cls-10 {
+        font-size: 10.7px;
+      }
+
+      .cls-11 {
+        font-size: 10px;
+      }
+
+      .cls-5 {
+        stroke-width: 1.5px;
+      }
+    </style>
+    <image id="image" width="6" height="5" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAGCAYAAAAPDoR2AAAACXBIWXMAAAWJAAAFiQFtaJ36AAAAPklEQVQImWNgwAMYD1wp+I9NwkFnAiMTAwMDw5N3nxmQaRhgYmBgYJAR4mV48u4zg4wQL6YkTAE6YMIQQQIAdQkNCqOMFTsAAAAASUVORK5CYII="/>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <g>
+      <rect class="cls-12" width="480" height="240"/>
+      <text class="cls-8" transform="translate(53.78 115.91)"><tspan x="0" y="0">To win connect all factories to at least one depot when in a game.</tspan></text>
+      <text class="cls-8" transform="translate(68.2 150.23)"><tspan x="0" y="0">Number Keys 1-6 to choose between 6 different tiles to construct your network.</tspan></text>
+      <text class="cls-8" transform="translate(67.88 159.34)"><tspan x="0" y="0">Use the “R” Key to rotate your current tile clockwise.</tspan></text>
+      <text class="cls-8" transform="translate(67.72 168.86)"><tspan x="0" y="0">Use the “Q” Key to cancel current selection.</tspan></text>
+      <text class="cls-8" transform="translate(67.09 187.56)"><tspan x="0" y="0">Left click to place tile.</tspan></text>
+      <text class="cls-8" transform="translate(66.54 198.82)"><tspan x="0" y="0">Right click to delete the current tile under the cursor.</tspan></text>
+      <text class="cls-8" transform="translate(53.62 214.2)"><tspan x="0" y="0">Once complete click on the “CheckMark” button to submit network for a score.</tspan></text>
+      <g>
+        <rect class="cls-13" x="357.56" y="48.17" width="32" height="32"/>
+        <image width="5" height="5" transform="translate(366.56 55.17) scale(2)" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAACXBIWXMAAAWJAAAFiQFtaJ36AAAAN0lEQVQImWM8cKXgPwMacNCZwMj05N1nBgYGBgYYDQNMMkK8DE/efWaQEeJFlWBgYMAQhEuQBAARNQ0KiT2GAQAAAABJRU5ErkJggg=="/>
+        <image width="6" height="5" transform="translate(377.56 70.17) scale(2)" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAGCAYAAAAPDoR2AAAACXBIWXMAAAWJAAAFiQFtaJ36AAAANElEQVQImWNgwAMYGRgYGA5cKfiPTZIJxtCQskKhUSRvPDvGoCFlxXDj2TFMSZgCrMZiAwAI1gwN0dhhwQAAAABJRU5ErkJggg=="/>
+        <path class="cls-3" d="M387.14,50.64c.5.53.4,1.86.42,4.22,0,5.32,0,12.02,0,17.54,0,1.05,0,1.95,0,2.9-.01,2.58-.28,2.85-2.86,2.86-6.33.02-13.55,0-19.8,0-5.75.02-5.35.42-5.33-5.33,0-6.25-.01-13.47,0-19.8.01-2.58.28-2.85,2.86-2.86.95,0,1.85,0,2.9,0,5.51,0,12.22,0,17.54,0,2.36.02,3.69-.08,4.22.42l.05.05Z"/>
+        <text class="cls-6" transform="translate(364.52 55.98)"><tspan x="0" y="0">Factory</tspan></text>
+        <rect class="cls-1" x="359.81" y="62.17" width="27.5" height="9"/>
+        <g>
+          <rect class="cls-5" x="361.88" y="61.56" width="5.81" height="5.71"/>
+          <line class="cls-5" x1="361.76" y1="61.66" x2="367.76" y2="67.56"/>
+        </g>
+        <g>
+          <rect class="cls-5" x="370.88" y="63.56" width="5.81" height="5.71"/>
+          <line class="cls-5" x1="370.76" y1="63.66" x2="376.76" y2="69.56"/>
+        </g>
+        <g>
+          <rect class="cls-5" x="379.73" y="61.05" width="5.81" height="5.71"/>
+          <line class="cls-5" x1="379.62" y1="61.16" x2="385.62" y2="67.05"/>
+        </g>
+      </g>
+      <g>
+        <rect class="cls-13" x="212.56" y="48.17" width="32" height="32"/>
+        <image width="6" height="5" transform="translate(232.56 63.17) scale(2)" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAGCAYAAAAPDoR2AAAACXBIWXMAAAWJAAAFiQFtaJ36AAAAO0lEQVQImWM8cKXgPwMW4KAzgZGJgYGB4cm7zwzINAwwMTAwMMgI8TI8efeZQUaIF1MSpgAdMGGIEAsA7x0NCvSAtTMAAAAASUVORK5CYII="/>
+        <use transform="translate(212.56 70.17) scale(2)" xlink:href="#image"/>
+        <use transform="translate(214.56 52.17) scale(2)" xlink:href="#image"/>
+        <path class="cls-3" d="M242.14,50.63c.5.53.4,1.86.42,4.22,0,5.32,0,12.02,0,17.54,0,1.05,0,1.95,0,2.9-.01,2.58-.28,2.85-2.86,2.86-6.33.02-13.55,0-19.8,0-5.75.02-5.35.42-5.33-5.33,0-6.25-.01-13.47,0-19.8.01-2.58.28-2.85,2.86-2.86.95,0,1.85,0,2.9,0,5.51,0,12.22,0,17.54,0,2.36.02,3.69-.08,4.22.42l.05.05Z"/>
+        <text class="cls-7" transform="translate(222.03 55.91)"><tspan x="0" y="0">Depot</tspan></text>
+        <g>
+          <g>
+            <rect class="cls-5" x="227.88" y="60.29" width="5.81" height="5.71"/>
+            <line class="cls-5" x1="227.77" y1="60.39" x2="233.77" y2="66.29"/>
+          </g>
+          <g>
+            <rect class="cls-5" x="223.93" y="67.04" width="5.81" height="5.71"/>
+            <line class="cls-5" x1="223.82" y1="67.14" x2="229.82" y2="73.04"/>
+          </g>
+          <g>
+            <rect class="cls-5" x="231.76" y="67.17" width="5.81" height="5.71" transform="translate(164.65 304.69) rotate(-90)"/>
+            <line class="cls-5" x1="231.92" y1="73.04" x2="237.82" y2="67.04"/>
+          </g>
+          <g>
+            <rect class="cls-5" x="219.76" y="60.79" width="5.81" height="5.71" transform="translate(159.02 286.31) rotate(-90)"/>
+            <line class="cls-5" x1="219.92" y1="66.66" x2="225.82" y2="60.66"/>
+          </g>
+        </g>
+      </g>
+      <text class="cls-10" transform="translate(53.72 140.37)"><tspan x="0" y="0">Controls</tspan></text>
+      <text class="cls-9" transform="translate(53.6 57.62)"><tspan x="0" y="0">Supply</tspan></text>
+      <text class="cls-9" transform="translate(101.4 83.3)"><tspan x="0" y="0">Ch</tspan></text>
+      <text class="cls-9" transform="translate(145.04 83.3)"><tspan x="0" y="0">ins</tspan></text>
+      <rect class="cls-4" x="136.63" y="76.53" width="6.9" height="6.9"/>
+      <line class="cls-2" x1="136.49" y1="76.65" x2="143.62" y2="83.79"/>
+      <rect class="cls-4" x="125.92" y="76.47" width="6.9" height="6.9"/>
+      <line class="cls-4" x1="125.79" y1="76.6" x2="132.92" y2="83.73"/>
+      <rect class="cls-4" x="130.92" y="68.63" width="6.9" height="6.9"/>
+      <line class="cls-2" x1="130.78" y1="68.75" x2="137.92" y2="75.89"/>
+      <text class="cls-11" transform="translate(248.67 67.44)"><tspan x="0" y="0">Depot</tspan></text>
+      <text class="cls-11" transform="translate(393.28 67.3)"><tspan x="0" y="0">Factory</tspan></text>
+    </g>
+  </g>
+</svg>
