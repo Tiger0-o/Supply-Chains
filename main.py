@@ -8,10 +8,11 @@ tilesetLandDarkURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/9
 
 tilesetRoadURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/TilesetRoad.png"
 tilesetRoadIDURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/Road%20Tileset%20ID.csv"
-tilesetBuildingURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/TilesetBuildings.png"
+tilesetBuildingURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/8c426093138d61f43419abfce808298be9692312/TilesetBuildings.png"
 
 buttonUIURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/cee5f3844e0ef08f5e27d42df372283ab2b00162/Button%20UI.png"
 logoUIURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/Logo%20UI.png"
+helpUIURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/8c426093138d61f43419abfce808298be9692312/HelpUI.png"
 fontBoldURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/0c43d5e83145e5ffc92996eb2f8b1b69f19f0a06/Fredoka-Bold.ttf"
 fontMediumURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/3e6f66167a9a4ce12c985c05f67b5604e6672751/Fredoka-Medium.ttf"
 fontSemiBoldURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/3e6f66167a9a4ce12c985c05f67b5604e6672751/Fredoka-SemiBold.ttf"
@@ -20,20 +21,51 @@ riverBasinURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14
 greenPlainsURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/8cb308005606b15c108ff675a13e9b1022fd1ada/Green%20Plains.csv"
 testPlainsURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/956e14ebfc0ec45c8b5df008f392ba7726a613f3/Test%20Plains.csv"
 
-# Initialization
-pygame.init()
-pygame.display.set_caption("Supply Chains")
-clock = pygame.time.Clock()
-tileSize = 32
-avaliableMaps = [riverBasinURL, greenPlainsURL]
+placeSoundURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/f9f5c11b34380495f29bbaa102df044557aaf69e/Place.mp3"
+errorSoundURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/f9f5c11b34380495f29bbaa102df044557aaf69e/Error.mp3"
+clickSoundURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/f9f5c11b34380495f29bbaa102df044557aaf69e/Click.mp3"
+loadingSoundURL = "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/1cd216497dbfcc9d9ce2fae17f31cceba660028f/Loading.mp3"
 
-fontBold = pygame.font.Font(io.BytesIO(requests.get(fontBoldURL).content), 65)
-fontSemiBold = pygame.font.Font(io.BytesIO(requests.get(fontSemiBoldURL).content), 16)
+def loadAssets():
+    global tilesetLand, tilesetLandDark, tilesetRoad, tilesetBuilding
+    global tilesetUI, tilesetLogoUI, tilesetHelpUI
+    global fontBold, fontSemiBold
+    global tileData, mapData, screen, mapHeight, mapWidth
+    global placeSound, errorSound, clickSound, loadingSound
 
-global currentRoad, hiddenBridges
-placementError = "You cannot place here."
+    mapData = loadData(riverBasinURL)
+    tileData = loadData(tilesetRoadIDURL)
+    mapHeight = len(mapData)
+    mapWidth = max(len(row) for row in mapData)
+    screen = pygame.display.set_mode((mapWidth * tileSize, mapHeight * tileSize))
 
-def loadData(url=riverBasinURL):
+    tilesetLand = loadImage(tilesetLandURL)
+    tilesetLandDark = loadImage(tilesetLandDarkURL)
+    tilesetRoad = loadImage(tilesetRoadURL)
+
+    tilesetBuilding = loadImage(tilesetBuildingURL)
+    tilesetUI = loadImage(buttonUIURL)
+    tilesetLogoUI = loadImage(logoUIURL)
+    tilesetHelpUI = loadImage(helpUIURL)
+
+    placeSound = loadSound(placeSoundURL)
+    errorSound = loadSound(errorSoundURL)
+    clickSound = loadSound(clickSoundURL)
+    loadingSound = loadSound(loadingSoundURL)
+
+    pygame.display.set_icon(loadImage(
+        "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/72a0b726fe279470a5b22a9f5aea50df0028eee2/WindowIcon.png"
+        ))
+
+def loadSound(url):
+    try:
+        response = requests.get(url)
+        return pygame.mixer.Sound(io.BytesIO(response.content))
+    except Exception as e:
+        print(f"Error loading sound from {url}:", e)
+        sys.exit()
+
+def loadData(url):
     try:
         csvResp = requests.get(url).text
         csvReader = csv.reader(io.StringIO(csvResp))
@@ -42,12 +74,6 @@ def loadData(url=riverBasinURL):
         print("CSV error:", e)
         sys.exit()
 
-global mapData, tileData
-mapData = loadData(riverBasinURL)
-tileData = loadData(tilesetRoadIDURL)
-mapHeight = len(mapData)
-mapWidth = max(len(row) for row in mapData)
-screen = pygame.display.set_mode((mapWidth * tileSize, mapHeight * tileSize))
 
 def loadImage(url):
     try:
@@ -56,18 +82,6 @@ def loadImage(url):
     except Exception as e:
         print(f"Error loading image from {url}:", e)
         sys.exit()
-
-tilesetLand = loadImage(tilesetLandURL)
-tilesetLandDark = loadImage(tilesetLandDarkURL)
-tilesetRoad = loadImage(tilesetRoadURL)
-
-tilesetBuilding = loadImage(tilesetBuildingURL)
-tilesetUI = loadImage(buttonUIURL)
-tilesetLogoUI = loadImage(logoUIURL)
-
-pygame.display.set_icon(loadImage(
-    "https://raw.githubusercontent.com/Tiger0-o/Supply-Chains/72a0b726fe279470a5b22a9f5aea50df0028eee2/WindowIcon.png"
-    ))
 
 def getTileById(sheet, tileId):
     cols = sheet.get_width() // tileSize
@@ -155,7 +169,9 @@ def bridgeLocate(cache=bridgeTileCache, contains=(0, 0)):
                 return bridgeNumber
     return None
 
-def roadMapping(sheet=tileData):
+def roadMapping(sheet=None):
+    if sheet is None:
+        sheet = tileData
     for y, row in enumerate(sheet):
         for x, tileId in enumerate(row):
             if tileId != -1:
@@ -471,7 +487,7 @@ def calculateScore():
     if not speed.running:
         return "None"
     timeTaken = speed.elapsed()
-    baseScore = 1000
+    baseScore = 9999
     timePenalty = timeTaken * 25.0  
     variation = random.randint(-50, 50)
     finalScore = int(baseScore - timePenalty + variation)
@@ -479,6 +495,20 @@ def calculateScore():
     if score < 1000:
         return "0" * (4 - len(str(score))) + str(score)
     return str(score)
+
+# Initialization
+pygame.init()
+pygame.display.set_caption("Supply Chains")
+clock = pygame.time.Clock()
+tileSize = 32
+avaliableMaps = [riverBasinURL, greenPlainsURL]
+
+fontBold = pygame.font.Font(io.BytesIO(requests.get(fontBoldURL).content), 65)
+fontSemiBold = pygame.font.Font(io.BytesIO(requests.get(fontSemiBoldURL).content), 16)
+
+global currentRoad, hiddenBridges
+placementError = "You cannot place here."
+loadAssets()
 
 timer = Timer()
 speed = Timer()
@@ -498,6 +528,7 @@ exitRect = pygame.Rect(tileSize * 13, tileSize * 1, tileSize, tileSize)
 submitRect = pygame.Rect(tileSize * 11, tileSize * 1, tileSize, tileSize)
 settingsRect = pygame.Rect(tileSize * 12, tileSize * 1, tileSize, tileSize)
 helpRect = pygame.Rect(tileSize * 1, tileSize * 1, tileSize, tileSize)
+pygame.mixer.Sound.play(loadingSound)
 
 while running:
     mouseX, mouseY = pygame.mouse.get_pos()
@@ -509,13 +540,15 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 3 and state == "game":
+            pygame.mixer.Sound.play(placeSound)
             currentMode = "deleting"
             deleteRoad(mouseCoord=(gridX, gridY))
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             currentMode = "building"
 
             if exitRect.collidepoint(event.pos):
+                pygame.mixer.Sound.play(clickSound)
                 if state == "game":
                     mapData = loadData(riverBasinURL)
                     state = "menu"
@@ -523,10 +556,12 @@ while running:
                     bridgeTileCache.clear()
                     currentRoad = None
                 elif state == "menu":
+                    pygame.time.delay(300)
                     running = False
                 elif state == "help":
                     state = prevState
             elif settingsRect.collidepoint(event.pos):
+                pygame.mixer.Sound.play(errorSound)
                 print("Settings currently not added into the game. Sorry!")
             elif helpRect.collidepoint(event.pos):
                 if state != "help":
@@ -534,9 +569,11 @@ while running:
                     state = "help"
                 else:
                     state = prevState
+                pygame.mixer.Sound.play(clickSound)
             elif submitRect.collidepoint(event.pos):
                 isValid = validPath()
                 if isValid:
+                    pygame.mixer.Sound.play(clickSound)
                     drawMap(tilesetLandDark)
                     score = calculateScore()
                     scoreText = fontBold.render(f"{score}", True, (232, 207, 166))
@@ -555,9 +592,11 @@ while running:
                     currentRoad = None
                     speed.reset()
                 else:
+                    pygame.mixer.Sound.play(errorSound)
                     print("You have not connected all factories to at least one depot. " \
                           "Please try again.")
             elif state == "menu" and playRect.collidepoint(event.pos):
+                pygame.mixer.Sound.play(clickSound)
                 speed.start()
                 mapData = loadData(random.choice(avaliableMaps))
                 validTiles = validBuildingTiles()
@@ -565,9 +604,11 @@ while running:
                 state = "game"
             elif state == "game" and currentMode == "building":
                 if currentRoad is None:
+                    pygame.mixer.Sound.play(errorSound)
                     print("Currently placing nothing.")
                     continue
                 elif (gridX, gridY) in buildingCache.keys():
+                    pygame.mixer.Sound.play(errorSound)
                     print("Cannot place on depot/factory.")
                     continue
                 bridgeNumber = 0 if not bridgeTileCache else max(bridgeTileCache.keys()) + 1
@@ -602,12 +643,14 @@ while running:
 
                 if index not in [4, 5]:
                     if not isWater and not isBridge:
+                        pygame.mixer.Sound.play(placeSound)
                         presentTiles = roadTileCache.get((gridX, gridY), [])
                         bridgeTiles = [tile for tile in presentTiles if tile not in roadId]
                         roadTileCache[(gridX, gridY)] = [currentRoad] + bridgeTiles
                     else:
-                        print(placementError)
+                        pygame.mixer.Sound.play(errorSound)
                 elif index in [4, 5] and isWater and isBridge and isValid:
+                    pygame.mixer.Sound.play(placeSound)
                     currentIndex = roadTileMapping[index].index(currentRoad)
                     if index == 4:
                         if currentIndex == 0:
@@ -649,6 +692,7 @@ while running:
                                     editBridge(bridgeTileCache, newRoad, pos, bridgeNumber)
                 else: 
                     print(placementError)
+                    pygame.mixer.Sound.play(errorSound)
         elif event.type == pygame.KEYDOWN:
             if state == "game":
                 currentMode = "building"
@@ -699,17 +743,17 @@ while running:
                     currentMode = "building"
                     pygame.draw.rect(screen, (255, 255, 255), outlineRect, width=1)
 
+        gridX = (mouseX // tileSize) * tileSize
+        gridY = (mouseY // tileSize) * tileSize
         if (currentRoad and not exitRect.collidepoint(mouseX, mouseY) 
             and not helpRect.collidepoint(mouseX, mouseY) 
             and not submitRect.collidepoint(mouseX, mouseY)
-            and not settingsRect.collidepoint(mouseX, mouseY)):
-            
-            if (gridX, gridY) in buildingCache.keys():
-                continue
+            and not settingsRect.collidepoint(mouseX, mouseY)
+            and not ((gridX, gridY) in buildingCache.keys())):
+
             bridgeId = [roadTileMapping[5][i] for i in [1, 2, 5, 6]] + [roadTileMapping[4][i] for i in [1, 4]]
             currentIndex = roadTileMapping[index].index(currentRoad)
-            gridX = (mouseX // tileSize) * tileSize
-            gridY = (mouseY // tileSize) * tileSize
+
 
             if index == 4:
                 if currentIndex == 0:
@@ -775,33 +819,12 @@ while running:
                 tileIndex += 1
 
     elif state == "help":
-        fontSemiBold = pygame.font.Font(io.BytesIO(requests.get(fontSemiBoldURL).content), 12)
-        drawMap(tilesetLandDark)
-        helpLines = [
-            "To win connect all factories to at least one depot.",
-            "",
-            "Controls:",
-            "  Number Keys 1-6 to choose between 6 different tiles to construct your network.",
-            "  \"R\" Key to rotate your current tile clockwise.",
-            "  \"Q\" Key to cancel current selection.",
-            "  Left click to place tile.",
-            "  Right click to delete the current tile under the cursor.",
-            "",
-            "Once complete click on the \"CheckMark\" button to submit network for a score.",
-        ]
-
-        screenCenterX = screen.get_width() // 2
-        screenCenterY = screen.get_height() // 2
-        lineHeight = fontSemiBold.get_height() + 4
-        totalTextHeight = len(helpLines) * lineHeight
-        startY = screenCenterY - (totalTextHeight // 2)
-
-        for i, line in enumerate(helpLines):
-            if line.strip():
-                textSurface = fontSemiBold.render(line, True, (232, 207, 166))
-                textX = screenCenterX - 220
-                textY = startY + (i * lineHeight)
-                screen.blit(textSurface, (textX, textY))
+        drawMap(tilesetLand)
+        for y in range(13):
+            for x in range(15):
+                tileId = y * 15 + x
+                tile = getTileById(tilesetHelpUI, tileId)
+                screen.blit(tile, (x * tileSize, y * tileSize))
 
     exitTile = 6 if exitRect.collidepoint(mouseX, mouseY) else 7
     screen.blit(getTileCached(tilesetUI, exitTile), exitRect.topleft)
@@ -815,6 +838,5 @@ while running:
     if state == "game":
         submitTile = 10 if submitRect.collidepoint(mouseX, mouseY) else 11
         screen.blit(getTileCached(tilesetUI, submitTile), submitRect.topleft)
-    print(calculateScore())
     pygame.display.flip()
 pygame.quit()
