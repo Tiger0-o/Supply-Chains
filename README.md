@@ -7,6 +7,6 @@ Ensure these packages are installed via `pip` before running the source code.\
 
 ### Download
 Download the standalone Windows executable:\
-[Supply Chains.exe](https://drive.google.com/file/d/1DKLuqrGZGjzHCQ0XCLvUi5nxZYX4pBQg/view?usp=sharing)\
+[Supply Chains.exe](https://drive.google.com/file/d/1QexjMr_ONlBk3CwN_0qDebRHZ2b0Nheb/view?usp=sharing)\
 This `.exe` was compiled by `pyinstaller` and ~~is not a virus~~
 
