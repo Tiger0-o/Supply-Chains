@@ -60,7 +60,7 @@ def loadAssets():
 def loadSound(url):
     try:
         response = requests.get(url)
-        return pygame.mixer.Sound(io.BytesIO(response.content))
+        return pygame.mixer.Sound(io.BytesIO(response.content)) 
     except Exception as e:
         print(f"Error loading sound from {url}:", e)
         sys.exit()
