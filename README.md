@@ -1,4 +1,4 @@
-![Supply Chains Logo]([https://myoctocat.com/assets/images/base-octocat.svg](https://github.com/Tiger0-o/Supply-Chains/blob/2e07c42c27b43bbc1407e7566b9ac57106b33da4/Logo%20UI.png))
+![Supply Chains Logo](https://github.com/Tiger0-o/Supply-Chains/blob/2e07c42c27b43bbc1407e7566b9ac57106b33da4/Logo%20UI.png)
 
 ### Code Dependencies
 > [pygame 2.6.1](https://www.pygame.org/news) - Used for rendering graphics, handling input, and managing game loops.\
