@@ -210,7 +210,11 @@ def deleteRoad(mouseCoord=(0, 0)):
     currentRoad = None
 
     x, y = mouseCoord
-    isWater = mapData[y // tileSize][x // tileSize] in range(12, 17)
+    try: 
+        isWater = mapData[gridY // tileSize][gridX // tileSize] in range(12, 17)
+    except IndexError:
+        print("IndexError, default settings applied")
+        isWater = False
 
     bridgePart = (
         [roadTileMapping[5][i] for i in [0, 3, 4, 7]] +
@@ -278,22 +282,26 @@ def validBuildingTiles():
     
     for y in range(mapHeight):
         for x in range(mapWidth):
-            if mapData[y][x] in range(12, 17):
-                continue
+            try:
+                if mapData[y][x] in range(12, 17):
+                    continue
 
-            validLocation = True
-            for dx in [-1, 0, 1]:
-                for dy in [-1, 0, 1]:
-                    adjX, adjY = x + dx, y + dy
-                    if 0 <= adjX < mapWidth and 0 <= adjY < mapHeight:
-                        if mapData[adjY][adjX] in range(12, 17):
-                            validLocation = False
-                            break
-                if not validLocation:
-                    break
-            
-            if validLocation and (x * tileSize, y * tileSize) not in [(416, 32),(384, 32),(352, 32),(32,32)]:
-                validTiles.append((x * tileSize, y * tileSize))
+                validLocation = True
+                for dx in [-1, 0, 1]:
+                    for dy in [-1, 0, 1]:
+                        adjX, adjY = x + dx, y + dy
+                        if 0 <= adjX < mapWidth and 0 <= adjY < mapHeight:
+                            if mapData[adjY][adjX] in range(12, 17):
+                                validLocation = False
+                                break
+                    if not validLocation:
+                        break
+                
+                if validLocation and (x * tileSize, y * tileSize) not in [(416, 32),(384, 32),(352, 32),(32,32)]:
+                    validTiles.append((x * tileSize, y * tileSize))
+            except IndexError:
+                 print("IndexError, default setting applied")
+                 pass
     return validTiles
 
 validConnections = {
@@ -637,7 +645,12 @@ while running:
                         if isLand[i] and isLand[i + 2] and not isLand[i + 1] and isLand[i] == isLand[i + 2] and isLand[i] != isLand[i + 1]:
                             isValid = True
 
-                isWater = mapData[gridY // tileSize][gridX // tileSize] in range(12, 17)
+                try: 
+                    isWater = mapData[gridY // tileSize][gridX // tileSize] in range(12, 17)
+                except IndexError:
+                    print("IndexError, default settings applied")
+                    isWater = False
+
                 isBridge = index in [4, 5]
                 roadId = [item for i in range(4) for item in roadTileMapping[i]]
 
