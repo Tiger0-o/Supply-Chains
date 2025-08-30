@@ -13,5 +13,5 @@ Download the standalone Windows executable:\
 This `.exe` was compiled by `pyinstaller` and ~~is not a virus~~
 
 ## Website
-Explore the development, updates, and additional resources for Supply Chains:
+Explore the development, updates, and additional resources for Supply Chains: \
 [Visit Website](https://tiger0-o.github.io/)
