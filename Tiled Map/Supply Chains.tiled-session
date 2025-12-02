@@ -1,0 +1,101 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "River Delta.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "Green Plains Test.tmx": {
+            "scale": 1.5,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 240,
+                "y": 191.66666666666666
+            }
+        },
+        "Green Plains.tmx": {
+            "scale": 1.5,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 239.66666666666666,
+                "y": 191.66666666666663
+            }
+        },
+        "Island.tmx": {
+            "scale": 1.5,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 365.66666666666663,
+                "y": 319.66666666666663
+            }
+        },
+        "River Basin Level.tmx": {
+            "scale": 1.5,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 240,
+                "y": 191.66666666666666
+            }
+        },
+        "River Delta.tmx": {
+            "scale": 1.5,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 239.66666666666666,
+                "y": 191.66666666666663
+            }
+        },
+        "Road Tileset ID.tmx": {
+            "scale": 2,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": -0.25,
+                "y": -0.25
+            }
+        },
+        "TilesetBase.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 5.5
+        },
+        "TilesetRoad.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "Warehouse.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        }
+    },
+    "last.exportedFilePath": "C:/Users/zhaoc/Downloads/Supply Chains/maps",
+    "last.imagePath": "C:/Users/zhaoc/Downloads/Supply Chains/assets",
+    "map.fixedSize": true,
+    "map.height": 12,
+    "map.lastUsedExportFilter": "CSV files (*.csv)",
+    "map.lastUsedFormat": "tmx",
+    "map.width": 15,
+    "openFiles": [
+        "River Basin Level.tmx",
+        "Green Plains.tmx",
+        "TilesetBase.tsx",
+        "TilesetRoad.tsx",
+        "Road Tileset ID.tmx",
+        "River Delta.tmx",
+        "Island.tmx"
+    ],
+    "project": "Supply Chains.tiled-project",
+    "recentFiles": [
+        "River Basin Level.tmx",
+        "Green Plains.tmx",
+        "TilesetBase.tsx",
+        "TilesetRoad.tsx",
+        "Road Tileset ID.tmx",
+        "Island.tmx",
+        "River Delta.tmx",
+        "Green Plains Test.tmx",
+        "Warehouse.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx"
+}
