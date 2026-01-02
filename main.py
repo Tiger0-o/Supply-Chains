@@ -474,6 +474,7 @@ def loadSound(url) -> pygame.mixer.Sound:
         print(f"Error loading sound from {url}:", e)
         sys.exit()
 
+
 def loadData(url) -> list[list[int]]:
     try:
         csvResp = requests.get(url).text
@@ -482,6 +483,7 @@ def loadData(url) -> list[list[int]]:
     except Exception as e:
         print("CSV error:", e)
         sys.exit()
+
 
 def loadImage(url) -> pygame.Surface:
     try:
@@ -669,6 +671,7 @@ def keyInteractions(event):
             if dragging == True:
                 dragging = False
             currentRoad = None
+            index = 0
         
 # Validates if a road/bridge can be placed at the given coordinates
 def validatePlacement(point: tuple[int, int]=(0, 0)) -> bool:
@@ -878,9 +881,10 @@ def clickInteractions(event, mouseCoordGrid: tuple[int, int]=(0, 0)):
                 print(placementError)
                 pygame.mixer.Sound.play(errorSound)
 
+
 # Function to preview the cursor outline based on current mode
 def cursorPreview(mouseCoordGrid: tuple[int, int]=(0, 0)):
-    global currentMode, currentRoad, timer
+    global currentMode, currentRoad, timer, index
 
     isInvalid = False
     if currentMode == "building" and currentRoad is not None:
@@ -905,22 +909,64 @@ def cursorPreview(mouseCoordGrid: tuple[int, int]=(0, 0)):
     else:
         color = (255, 255, 255)
 
-    if index in (4, 5):
-        try:
-            currentIndex = roadTileMapping[index].index(currentRoad)
-        except (ValueError, IndexError):
+    if currentRoad is None:
+        pygame.draw.rect(screen, color, outlineRect, width=1)
+        return
+
+    # Draw outline logic    
+    position = mouseCoordGrid  
+    currentIndex = -1
+    changed, isWater = False, False
+    prevIndex = ()
+    hoveredBridge = bridgeLocate(mouseCoordGrid)
+    try: 
+        isWater = mapData[mouseCoordGrid[1] // tileSize][mouseCoordGrid[0] // tileSize] in range(12, 17)
+    except IndexError:
+        isWater = False
+
+    if hoveredBridge is not None and isWater and index not in (4, 5):
+        # Find all tiles of this bridge
+        bridgeTiles = bridgeTileCache[hoveredBridge]
+        coord = [coord for coord, tile in bridgeTiles]
+        sortedCoord = [[x for x, y in coord], [y for x, y in coord]]
+
+        offset = {"x": {3: (sortedCoord[0][1], sortedCoord[1][0]),
+                        4: (sortedCoord[0][1], sortedCoord[1][0])}, 
+                  "y": {3: (sortedCoord[0][0], sortedCoord[1][1]),
+                        4: (sortedCoord[0][0], sortedCoord[1][1])}
+        }
+
+        prevIndex = (index, currentRoad)
+        if len(set(sortedCoord[0])) == 1: # One mutual x-coordinate -> vertical bridge
+            position = offset["y"][len(sortedCoord[0])] 
             currentIndex = 0
 
+        elif len(set(sortedCoord[1])) == 1: # Same logic -> horizontal bridge
+            position = offset["x"][len(sortedCoord[1])] 
+            currentIndex = len(sortedCoord[1])
+        index = len(sortedCoord[0]) + 1
+        changed = True
+
+    if index in (4, 5):
+        if not changed:
+            try:
+                currentIndex = roadTileMapping[index].index(currentRoad)
+            except (ValueError, IndexError):
+                currentIndex = 0
         offset = {4: {0: "y", 3: "x"}, 5: {0: "y", 4: "x"}}
         if offset.get(index, {}).get(currentIndex, None) == "y":
-            rect = pygame.Rect(mouseCoordGrid[0], mouseCoordGrid[1] - 0.5 * tileSize, tileSize, (index - 2) * tileSize)
+            rect = pygame.Rect(position[0], position[1] - 0.5 * tileSize, tileSize, (index - 2) * tileSize)
             pygame.draw.rect(screen, color, rect, width=1)
-            return
+            
         elif offset.get(index, {}).get(currentIndex, None) == "x":
-            rect =pygame.Rect(mouseCoordGrid[0] - (index - 3.5) * tileSize, mouseCoordGrid[1], (index - 2) * tileSize, tileSize)
+            rect = pygame.Rect(position[0] - (index - 3.5) * tileSize, position[1], (index - 2) * tileSize, tileSize)
             pygame.draw.rect(screen, color, rect, width=1)
-            return
-    else: pygame.draw.rect(screen, color, outlineRect, width=1)
+
+        if changed and prevIndex:
+            index, currentRoad = prevIndex
+        return
+    pygame.draw.rect(screen, color, outlineRect, width=1)
+
 
 # Function to preview the tile being placed
 def tilePreview(mouseCoordGrid: tuple[int, int]=(0, 0), index: int=0, alpha: int=100):
@@ -969,6 +1015,7 @@ def tilePreview(mouseCoordGrid: tuple[int, int]=(0, 0), index: int=0, alpha: int
             except Exception:
                 screen.blit(currentRoad, mouseCoordGrid)
                 hiddenPreviewTiles.append(mouseCoordGrid)
+
 
 # Function to load the settings UI sliders
 def buildSettingsUI() -> None:
@@ -1043,6 +1090,7 @@ def buildSettingsUI() -> None:
         )
     )
   
+
 # Function to draw the user interface
 def drawInterface(state: str="menu"):
     # Menu screen UI
@@ -1369,4 +1417,6 @@ while running:
     pygame.display.flip()
     clock.tick(60)
 pygame.quit()
+
+
 
