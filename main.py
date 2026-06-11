@@ -6,7 +6,7 @@ from typing import Union
 from helper import Slider
 
 # Known PROBLEMS
-    # none so far (not going to last ahh)
+    # BUG OS WITH THE BUTTON FOR MULTIPLE SCREENS (EG. SETTINGS>INFO>X>X?)
 
 # Nice additions
     # Somehow have a default tile that loads if out of range
@@ -785,6 +785,7 @@ def clickInteractions(event, mouseCoordGrid: tuple[int, int]=(0, 0)):
         currentMode = "building"
 
         # UI button interactions
+
         if exitRect.collidepoint(event.pos):
             pygame.mixer.Sound.play(clickSound)
             if state == "game":
@@ -793,30 +794,33 @@ def clickInteractions(event, mouseCoordGrid: tuple[int, int]=(0, 0)):
                 bridgeTileCache.clear()
                 currentRoad = None
             elif state == "menu":
-                pygame.time.delay(300)
                 running = False
             elif state == "help":
-                state = prevState
+                state = prevState[len(prevState) - 1] if len(prevState) > 0 else "menu"
+                prevState.pop()
             elif state == "settings":
-                state = prevState
+                state = prevState[len(prevState) - 1] if len(prevState) > 0 else "menu"
+                prevState.pop()
 
         # Settings button interaction
         elif settingsRect.collidepoint(event.pos):
             pygame.mixer.Sound.play(clickSound)
             if state != "settings":
-                prevState = state
+                prevState.append(state)
                 state = "settings"
             else:
-                state = prevState
+                state = prevState[len(prevState) - 1] if len(prevState) > 0 else "menu"
+                prevState.pop()
 
         # Help button interaction
         elif helpRect.collidepoint(event.pos):
             pygame.mixer.Sound.play(clickSound)
             if state != "help":
-                prevState = state
+                prevState.append(state)
                 state = "help"
             else:
-                state = prevState
+                state = prevState[len(prevState) - 1] if len(prevState) > 0 else "menu"
+                prevState.pop()
 
         # Submit path for validation
         elif submitRect.collidepoint(event.pos):
@@ -1300,7 +1304,7 @@ currentMode = "building" # Modes: building, deleting
 # Mouse and UI variables
 index = 0
 state = "menu" # States: menu, help, game, settings
-prevState = str()
+prevState = []
 
 # Global settings
 global settings, settingsSliders
