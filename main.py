@@ -612,7 +612,9 @@ def settingsUpdate():
     except Exception:
         pass
     
-    image = loadImage(mouseCursorURL)
+    image = globals().get("mouseCursor")
+    if image is None:
+        image = loadImage(mouseCursorURL)
     try:
         scale = settings.get("cursorSize", 1.0)
         if isinstance(scale, (int, float)) and scale != 1.0:
@@ -767,6 +769,8 @@ def placeTile(mouseCoordGrid: tuple[int, int]=(0, 0), index: int=0):
 def clickInteractions(event, mouseCoordGrid: tuple[int, int]=(0, 0)):
     # Handle all mouse click interactions (called from MOUSEBUTTONDOWN in the main loop)
     global running, mapData, buildingCache, currentMode, prevState, elapsed, score, state, currentRoad, index, currentMap
+    global currentRoad, currentMode, index, dragging, dragInfo
+
     def reverseElapsed(a: Timer):
         if a.running:
             a.stop()
@@ -788,11 +792,20 @@ def clickInteractions(event, mouseCoordGrid: tuple[int, int]=(0, 0)):
 
         if exitRect.collidepoint(event.pos):
             pygame.mixer.Sound.play(clickSound)
-            if state == "game":
-                state = "menu"
+            if state == "game" or state == "end":
                 roadTileCache.clear()
                 bridgeTileCache.clear()
+
                 currentRoad = None
+                currentMode = "building"
+                index = 0
+                dragging = False
+                dragInfo = {"startPos": (0, 0), "orientation": "", "lastPos": (0, 0), "type": "", "endPos": (0, 0)}
+                
+                elapsed.stop()
+                elapsed.reset()
+                state = "menu"
+
             elif state == "menu":
                 running = False
             elif state == "help":
@@ -827,25 +840,8 @@ def clickInteractions(event, mouseCoordGrid: tuple[int, int]=(0, 0)):
             isValid = validPath()
             if isValid:
                 pygame.mixer.Sound.play(clickSound)
-                drawMap(tilesetLandDark)
                 score = calculateScore()
-                scoreText = fontBold.render(f"{score}", True, (232, 207, 166))
-                fontSemiBold = pygame.font.Font(io.BytesIO(requests.get(fontSemiBoldURL).content), 12)
-                scoreDescription = fontSemiBold.render(
-                    f"Congratulations, you have beaten Supply Chains!", True, (232, 207, 166)
-                )
-
-                screen.blit(scoreText, (tileSize * 5.5, tileSize * 4))
-                screen.blit(scoreDescription, (tileSize * 3.5, tileSize * 6))
-                
-                pygame.display.flip()
-                pygame.time.wait(2500)
-
-                state = "menu"
-                roadTileCache.clear()
-                bridgeTileCache.clear()
-                currentRoad = None
-                elapsed.reset()
+                state = "end"
             else:
                 pygame.mixer.Sound.play(errorSound)
                 print(
@@ -1120,6 +1116,18 @@ def drawInterface(state: str="menu"):
                 tileId = y * 15 + x
                 tile = getTileById(tilesetHelpUI, tileId)
                 screen.blit(tile, (x * tileSize, y * tileSize))
+
+    # End screen UI
+    elif state == "end":
+        drawMap(tilesetLandDark)
+
+        scoreText = fontBold.render(f"{score}", True, (232, 207, 166))
+        scoreDescription = fontSemiBold.render(
+            f"Congratulations, you have beaten Supply Chains!", True, (232, 207, 166)
+        )
+
+        screen.blit(scoreText, (tileSize * 5.5, tileSize * 4))
+        screen.blit(scoreDescription, (tileSize * 3.5, tileSize * 6))
     
     # Game screen UI
     elif state == "game":
@@ -1290,6 +1298,7 @@ fontSemiBold = pygame.font.Font(io.BytesIO(requests.get(fontSemiBoldURL).content
 global currentRoad, hiddenBridges, currentMode, index, state, prevState, inventory
 placementError = "You cannot place here."
 inventory = [False, 1]
+score = "0000"
 
 # Cells covered by the current preview
 hiddenPreviewCells = set()
@@ -1303,7 +1312,7 @@ currentMode = "building" # Modes: building, deleting
 
 # Mouse and UI variables
 index = 0
-state = "menu" # States: menu, help, game, settings
+state = "menu" # States: menu, help, game, settings, end
 prevState = []
 
 # Global settings
@@ -1380,7 +1389,6 @@ while running:
                     slider.handleEvent(event)
             except Exception:
                 pass
-            settingsUpdate()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if state == "game" and event.button == 1 and index == 0 and currentRoad is not None:
